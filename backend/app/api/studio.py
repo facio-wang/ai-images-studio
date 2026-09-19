@@ -15,6 +15,19 @@ router = APIRouter(dependencies=[Depends(require_auth)])
 meta_router = APIRouter()
 
 
+def _image_ext(file: bytes) -> str | None:
+    """按魔数识别图片格式，防止把 JSON 等非图片字节当成图片入库/入队"""
+    if file.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if file.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if file.startswith(b"RIFF") and file[8:12] == b"WEBP":
+        return "webp"
+    if file[:3] == b"GIF":
+        return "gif"
+    return None
+
+
 @meta_router.get("/")
 async def root() -> dict:
     return {"code": CODE_OK, "msg": "ok", "data": {"name": "AI Images Studio", "version": "0.1.0"}}
@@ -80,7 +93,10 @@ async def upload_asset(request: Request, label: str = "", db=Depends(get_db)):
     file = await request.body()
     if not file:
         return fail(400, "请求体不能为空")
-    filename = save_upload(file, "png")
+    ext = _image_ext(file)
+    if not ext:
+        return fail(400, "请求体不是有效的图片文件（支持 PNG/JPG/WebP/GIF），请重新选择图片上传")
+    filename = save_upload(file, ext)
     thumb = make_thumbnail(filename)
     asset = await asset_service.add_asset(
         db, "upload", filename, thumb, filename=filename, labels=label
@@ -135,6 +151,8 @@ async def matting_upload(request: Request, model: str = "bria-rmbg", db=Depends(
     file = await request.body()
     if not file:
         return fail(400, "请求体不能为空")
+    if not _image_ext(file):
+        return fail(400, "上传内容不是有效的图片文件（支持 PNG/JPG/WebP/GIF），请重新选择图片后提交")
     task = await task_service.create_task(
         db, "matting", {"image_base64": base64.b64encode(file).decode(), "model": model}
     )

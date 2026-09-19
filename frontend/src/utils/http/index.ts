@@ -40,6 +40,12 @@ axiosInstance.interceptors.request.use(
     if (request.data instanceof FormData) {
       // FormData 类型不设置 Content-Type，让浏览器自动添加 boundary
       delete request.headers['Content-Type']
+    } else if (
+      typeof File !== 'undefined' &&
+      (request.data instanceof File || request.data instanceof Blob)
+    ) {
+      // 二进制文件直传：不 JSON 序列化、不覆盖 Content-Type（按文件实际类型发送）
+      delete request.headers['Content-Type']
     } else if (request.data) {
       // 其他数据类型设置为 application/json
       request.headers.set('Content-Type', 'application/json')
