@@ -3,6 +3,9 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import EmojiText from '../ui/emojo'
 import { ApiStatus } from './status'
+
+// AI Images Studio 后端统一响应体的成功码（{code, msg, data} 结构）
+const CODE_OK = 200
 import type { RequestOptions, ErrorMessageMode } from '@/types/api'
 
 const axiosInstance = axios.create({
@@ -204,6 +207,14 @@ async function request<T = any>(config: ExtendedRequestConfig): Promise<T> {
 
   try {
     const res = await axiosInstance.request<T>(processedConfig)
+    // 后端统一响应体 {code, msg, data}：业务失败也返回 HTTP 200，
+    // 必须在这里拦截，否则 data=null 流到业务代码里变成莫名其妙的空指针
+    const body: any = res.data
+    if (body && typeof body === 'object' && 'code' in body && body.code !== CODE_OK) {
+      const message = `${body.msg || '请求失败'} ${EmojiText[body.code === 400 ? 400 : 500]}`
+      ElMessage.error(message)
+      return Promise.reject(new Error(body.msg || '请求失败'))
+    }
     return res.data
   } catch (e) {
     if (axios.isAxiosError(e)) {
