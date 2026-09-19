@@ -26,4 +26,5 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      # 首次启动含 rembg/onnx 模型加载，放宽健康检查起步宽限
+      start_period: 40s

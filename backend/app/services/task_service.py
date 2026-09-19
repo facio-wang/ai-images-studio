@@ -190,7 +190,7 @@ async def _insert_asset(db: aiosqlite.Connection, asset_type: str, filename: str
 
 async def _claim_next_task() -> tuple[aiosqlite.Connection, dict] | None:
     """取出一个 queued 任务并置为 running，返回 (连接, 任务行)"""
-    db = await aiosqlite.connect(settings.DB_PATH)
+    db = await aiosqlite.connect(settings.DB_PATH, timeout=10)
     db.row_factory = aiosqlite.Row
     try:
         row = await (
@@ -282,9 +282,35 @@ async def _execute_claimed(db: aiosqlite.Connection, task: dict) -> None:
         await db.close()
 
 
+async def _requeue_orphans(db_path) -> int:
+    """启动自愈：把容器重启/崩溃遗留的 running 孤儿任务重新入队。
+
+    任务在 worker 认领后置 running；若进程在执行中途退出，状态会永远停在
+    running 且无人处理（历史 bug：任务卡 running、用户端永远等待）。
+    """
+    import aiosqlite as _aio
+
+    db = await _aio.connect(db_path, timeout=10)
+    try:
+        cur = await db.execute(
+            "UPDATE tasks SET status='queued', updated_at=datetime('now','localtime')"
+            " WHERE status='running'"
+        )
+        await db.commit()
+        return cur.rowcount or 0
+    finally:
+        await db.close()
+
+
 async def worker_loop() -> None:
     """后台 worker 主循环：轮询 queued 任务逐个执行"""
     register_handlers()
+    try:
+        recovered = await _requeue_orphans(settings.DB_PATH)
+        if recovered:
+            logger.warning("检测到 %d 个中断遗留的 running 任务，已重新入队", recovered)
+    except Exception:
+        logger.exception("孤儿任务重入队失败（忽略，继续启动 worker）")
     logger.info("任务 worker 启动 (poll=%.1fs)", settings.WORKER_POLL_INTERVAL)
     while True:
         try:

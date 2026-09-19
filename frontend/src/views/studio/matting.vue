@@ -14,8 +14,9 @@
         <div class="studio-card">
           <div class="card-title">抠图模型</div>
           <ElSelect v-model="model" style="width: 100%">
-            <ElOption label="bria-rmbg（快速 · 通用）" value="bria-rmbg" />
-            <ElOption label="birefnet（高精度 · 发丝边缘）" value="birefnet" />
+            <ElOption label="u2net（轻量 · CPU 友好 · 推荐）" value="u2net" />
+            <ElOption label="bria-rmbg（效果好 · 需 GPU/强 CPU）" value="bria-rmbg" />
+            <ElOption label="birefnet（高精度发丝边缘 · 需强算力）" value="birefnet" />
           </ElSelect>
 
           <div class="card-title" style="margin-top: 16px">上传图片</div>
@@ -72,9 +73,13 @@
           <span class="result-meta">拖动滑块查看抠图效果</span>
         </div>
 
-        <div v-if="submitting || polling" class="studio-empty">
-          <ElIcon class="is-loading" :size="24"><Loading /></ElIcon>
-          <span>抠图任务执行中…</span>
+        <div v-if="submitting || polling" class="mat-waiting">
+          <TaskProgress
+            :percent="waitPercent"
+            :elapsed-sec="waitElapsed"
+            :phase-text="waitPhase"
+            hint="低配设备 / 大图推理可能需要几分钟，可放心等待"
+          />
         </div>
 
         <template v-else-if="sourceUrl && resultAsset">
@@ -98,7 +103,6 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { Loading } from '@element-plus/icons-vue'
 import { ElMessage, UploadFile } from 'element-plus'
 import {
   getAsset,
@@ -110,6 +114,7 @@ import {
   taskAssetIds,
   uploadMatting
 } from '@/api/studio'
+import TaskProgress from './components/TaskProgress.vue'
 import './style.scss'
 
 defineOptions({ name: 'StudioMatting' })
@@ -144,7 +149,7 @@ const CompareSlider = defineComponent({
 
 const route = useRoute()
 
-const model = ref('bria-rmbg')
+const model = ref('u2net')
 const pickAssets = ref<StudioAsset[]>([])
 const selectedAssetId = ref<number | null>(null)
 const uploadFile = ref<File | null>(null)
@@ -153,6 +158,10 @@ const sourceAsset = ref<StudioAsset | null>(null)
 const resultAsset = ref<StudioAsset | null>(null)
 const submitting = ref(false)
 const polling = ref(false)
+/** 等待进度状态：目标百分比 / 已等待秒数 / 阶段文案 */
+const waitPercent = ref(4)
+const waitElapsed = ref(0)
+const waitPhase = ref('正在提交…')
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let previewUrl: string | null = null
@@ -220,6 +229,9 @@ const submit = async () => {
   if (!canSubmit.value) return
   submitting.value = true
   resultAsset.value = null
+  waitPercent.value = 4
+  waitElapsed.value = 0
+  waitPhase.value = '正在提交…'
   try {
     let task: StudioTask
     if (uploadFile.value) {
@@ -237,18 +249,35 @@ const submit = async () => {
   }
 }
 
-/** 轮询任务直至 done，取第一个产物资产做对比 */
+/** 轮询任务直至 done，取第一个产物资产做对比（低配 CPU 推理可达数分钟，上限 10 分钟） */
 const poll = async (taskId: number) => {
   polling.value = true
+  waitPhase.value = '排队等待推理…'
+  waitPercent.value = 12
   try {
-    const task = await pollTask(taskId, { timeoutMs: 180000 })
+    const task = await pollTask(taskId, {
+      timeoutMs: 600000,
+      onUpdate: (t, elapsedSec) => {
+        waitElapsed.value = elapsedSec
+        if (t.status === 'queued') {
+          waitPhase.value = '排队等待推理…'
+          waitPercent.value = Math.max(waitPercent.value, 12)
+        } else {
+          waitPhase.value = 'AI 推理中，请稍候…'
+          // 缓慢爬升到 95%，真实完成由 done 状态决定
+          waitPercent.value = Math.min(95, Math.max(waitPercent.value, 20 + elapsedSec * 1.2))
+        }
+      }
+    })
     const ids = taskAssetIds(task)
     if (!ids.length) {
       ElMessage.warning('任务完成但未产出资产')
       return
     }
+    waitPhase.value = '加载结果…'
     const res = await getAsset(ids[0])
     resultAsset.value = res.data
+    ElMessage.success(`抠图完成（耗时 ${waitElapsed.value}s）`)
   } catch (error) {
     ElMessage.error(error instanceof Error ? error.message : '抠图任务失败')
   } finally {
@@ -374,6 +403,10 @@ onUnmounted(() => {
     height: 42px;
     font-size: 14px;
     margin-top: 6px;
+  }
+
+  .mat-waiting {
+    padding: 40px 20px;
   }
 
   .result-meta {

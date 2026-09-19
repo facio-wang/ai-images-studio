@@ -116,7 +116,7 @@
           <div class="entry-card" @click="$router.push('/creation/matting')">
             <div class="entry-icon">✂️</div>
             <div class="entry-name">抠图工具箱</div>
-            <div class="entry-sub">bria-rmbg / birefnet</div>
+            <div class="entry-sub">u2net / bria-rmbg</div>
           </div>
           <div class="entry-card" @click="$router.push('/manage/models')">
             <div class="entry-icon">🧠</div>

@@ -232,8 +232,8 @@ const send = async (text?: string) => {
       waitingTask.value = data.task_id
       try {
         const task = await pollTask(data.task_id, {
-          // 生图服务不可达时任务会在 1-3 次快速重试后失败，超时收紧到 90s 避免干等
-          timeoutMs: 90000,
+          // 生图/抠图耗时取决于硬件（低配设备可能数分钟），轮询自带瞬断重试
+          timeoutMs: 600000,
           onUpdate: (t) => {
             // 任务转为 failed 时立即给出明确提示（不再静默等待）
             if (t.status === 'failed') {

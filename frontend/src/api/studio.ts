@@ -330,19 +330,40 @@ export function retryTask(id: number) {
 
 /**
  * 轮询任务直至 done / failed
- * @throws 超时或任务失败时抛出错误（message 为任务 error）
+ *
+ * 容错设计（低配设备/并发推理场景）：
+ * - 单次状态查询失败（网络抖动/服务繁忙）按退避重试，连续 10 次失败才判定失联，
+ *   避免后端 CPU 饱和时偶发超时就把整个等待打断（历史 bug：抠图推理期间轮询报 X_X）
+ * - 超时上限按任务类型传入（生图/抠图在低配设备上可能远超默认值）
+ * @throws 超时、连续失联或任务失败时抛出错误（message 为任务 error）
  */
 export async function pollTask(
   taskId: number,
-  options?: { intervalMs?: number; timeoutMs?: number; onUpdate?: (task: StudioTask) => void }
+  options?: {
+    intervalMs?: number
+    timeoutMs?: number
+    onUpdate?: (task: StudioTask, elapsedSec: number) => void
+  }
 ): Promise<StudioTask> {
   const interval = options?.intervalMs ?? 1500
   const timeout = options?.timeoutMs ?? 300000
   const start = Date.now()
+  let fails = 0
   for (;;) {
-    const res = await getTask(taskId)
-    const task = res.data
-    options?.onUpdate?.(task)
+    let task: StudioTask
+    try {
+      const res = await getTask(taskId)
+      task = res.data
+      fails = 0
+    } catch {
+      fails++
+      const elapsedSec = Math.round((Date.now() - start) / 1000)
+      if (fails >= 10) throw new Error('无法连接后端服务，请确认服务运行中（已等待 ' + elapsedSec + 's）')
+      if (Date.now() - start > timeout) throw new Error('任务超时，请稍后在任务中心查看')
+      await new Promise((resolve) => setTimeout(resolve, Math.min(interval * fails, 8000)))
+      continue
+    }
+    options?.onUpdate?.(task, Math.round((Date.now() - start) / 1000))
     if (task.status === 'done') return task
     if (task.status === 'failed') throw new Error(task.error || '任务执行失败')
     if (Date.now() - start > timeout) throw new Error('任务超时，请稍后在任务中心查看')

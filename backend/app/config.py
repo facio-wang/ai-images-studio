@@ -39,8 +39,12 @@ class Settings:
     ZIMAGE_TEXT_ENCODER: str = os.getenv("STUDIO_ZIMAGE_TEXT_ENCODER", "qwen_3_4b_fp8_mixed.safetensors")
     ZIMAGE_VAE: str = os.getenv("STUDIO_ZIMAGE_VAE", "ae.safetensors")
 
-    # 抠图：bria-rmbg 默认 / birefnet 可选
-    REMBG_MODEL: str = os.getenv("REMBG_MODEL", "bria-rmbg")
+    # 抠图：默认 u2net（CPU 数秒~分钟级）；bria-rmbg/birefnet 效果更好但算力需求高
+    REMBG_MODEL: str = os.getenv("REMBG_MODEL", "u2net")
+    # ONNX 推理线程数：默认 3，给 Web 事件循环留 CPU（全占会导致其他请求超时）
+    MATTING_THREADS: int = int(os.getenv("MATTING_THREADS", "3"))
+    # 抠图推理前最大边长：超过则降采样，跑完把蒙版放大回原尺寸（防 4K 大图内存爆/超时）
+    MATTING_MAX_SIDE: int = int(os.getenv("MATTING_MAX_SIDE", "2048"))
 
     # 任务队列 worker 轮询间隔（秒）
     WORKER_POLL_INTERVAL: float = float(os.getenv("WORKER_POLL_INTERVAL", "1.0"))

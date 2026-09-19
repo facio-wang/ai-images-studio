@@ -148,9 +148,13 @@
             <span v-if="taskInfo" class="result-meta">任务 #{{ taskInfo.id }} · {{ TASK_STATUS_TEXT[taskInfo.status] }}</span>
           </div>
 
-          <div v-if="submitting || polling" class="studio-empty">
-            <ElIcon class="is-loading" :size="24"><Loading /></ElIcon>
-            <span>任务执行中，产物完成后自动展示…</span>
+          <div v-if="submitting || polling" class="gen-waiting">
+            <TaskProgress
+              :percent="waitPercent"
+              :elapsed-sec="waitElapsed"
+              :phase-text="waitPhase"
+              hint="生图速度取决于 ComfyUI 侧显卡性能，低配显卡可能需要几分钟"
+            />
           </div>
 
           <div v-else-if="results.length" class="result-grid">
@@ -199,9 +203,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import {
   getAsset,
@@ -216,6 +219,7 @@ import {
   taskAssetIds
 } from '@/api/studio'
 import { fetchRecentAssets, TASK_STATUS_TEXT } from './utils'
+import TaskProgress from './components/TaskProgress.vue'
 import './style.scss'
 
 defineOptions({ name: 'StudioGenerate' })
@@ -249,6 +253,14 @@ const history = ref<StudioAsset[]>([])
 const taskInfo = ref<StudioTask | null>(null)
 const submitting = ref(false)
 const polling = ref(false)
+/** 等待进度状态：目标百分比 / 已等待秒数 / 阶段文案 */
+const waitPercent = ref(4)
+const waitElapsed = ref(0)
+const waitPhase = ref('正在提交…')
+const waitTimer = setInterval(() => {
+  if (submitting.value || polling.value) waitElapsed.value++
+}, 1000)
+onUnmounted(() => clearInterval(waitTimer))
 
 /** 安全解析模型 meta（后端可能返回 JSON 字符串或对象） */
 const parseMeta = (m: StudioModel): Record<string, any> => {
@@ -408,6 +420,9 @@ const submit = async () => {
   if (!prompt) return
   submitting.value = true
   results.value = []
+  waitPercent.value = 4
+  waitElapsed.value = 0
+  waitPhase.value = '正在提交…'
   try {
     const res = await submitGenerate({
       prompt,
@@ -430,15 +445,32 @@ const submit = async () => {
   }
 }
 
-/** 手动轮询循环：每 2s 查一次任务状态，最长 5 分钟 */
+/**
+ * 轮询循环：每 2s 查一次任务状态（瞬断自动重试），上限 15 分钟
+ * （生图速度取决于 ComfyUI 侧硬件：低配显卡 + 大参数可能远超默认超时）
+ */
 const poll = (taskId: number) =>
   new Promise<void>((resolve, reject) => {
     polling.value = true
+    waitPhase.value = '排队等待 GPU…'
+    waitPercent.value = 10
+    let startedAt = 0
+    let fails = 0
     const tick = async () => {
       try {
         const res = await getTask(taskId)
         const task = res.data
+        fails = 0
         taskInfo.value = task
+        if (task.status === 'running' && !startedAt) startedAt = Date.now()
+        if (task.status === 'queued') {
+          waitPhase.value = '排队等待 GPU…'
+          waitPercent.value = Math.max(waitPercent.value, 10)
+        } else if (task.status === 'running') {
+          const runSec = startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0
+          waitPhase.value = '正在生成，请稍候…'
+          waitPercent.value = Math.min(95, Math.max(waitPercent.value, 15 + runSec * 1.2))
+        }
         if (task.status === 'done') {
           polling.value = false
           await loadResults(taskAssetIds(task))
@@ -452,13 +484,22 @@ const poll = (taskId: number) =>
           return
         }
         pollTimer = setTimeout(tick, 2000)
-      } catch (error) {
-        polling.value = false
-        reject(error instanceof Error ? error : new Error('任务查询失败'))
+      } catch {
+        // 网络抖动/后端繁忙：退避重试，连续 10 次失败才判定失联，不中断等待
+        fails++
+        if (fails >= 10 || Date.now() - (submitStartedAt || Date.now()) > 900000) {
+          polling.value = false
+          reject(new Error('任务状态查询连续失败，请稍后在任务中心查看结果'))
+          return
+        }
+        pollTimer = setTimeout(tick, Math.min(2000 * fails, 8000))
       }
     }
+    submitStartedAt = Date.now()
     tick()
   })
+
+let submitStartedAt = 0
 
 const loadResults = async (ids: number[]) => {
   const list: StudioAsset[] = []
@@ -664,6 +705,10 @@ onMounted(() => {
     font-size: 11px;
     color: var(--art-gray-500);
     margin-left: 8px;
+  }
+
+  .gen-waiting {
+    padding: 40px 20px;
   }
 
   .result-grid {

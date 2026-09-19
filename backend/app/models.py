@@ -64,9 +64,13 @@ CREATE INDEX IF NOT EXISTS idx_messages_session ON chat_messages(session_id);
 
 
 async def get_db() -> aiosqlite.Connection:
-    """打开数据库连接（FastAPI 依赖注入用，每请求一个连接）"""
+    """打开数据库连接（FastAPI 依赖注入用，每请求一个连接）
+
+    busy_timeout=10s：任务 worker 写库时读请求等待锁而不是立刻报错；
+    WAL 模式在 init_db 统一开启（读写不互斥），避免推理长事务阻塞任务轮询。
+    """
     settings.ensure_dirs()
-    db = await aiosqlite.connect(settings.DB_PATH)
+    db = await aiosqlite.connect(settings.DB_PATH, timeout=10)
     db.row_factory = aiosqlite.Row
     try:
         yield db
@@ -76,9 +80,10 @@ async def get_db() -> aiosqlite.Connection:
 
 
 async def init_db() -> None:
-    """建表（幂等）"""
+    """建表（幂等）+ 开启 WAL（读写并发，写锁不再阻塞 API 轮询）"""
     settings.ensure_dirs()
     async with aiosqlite.connect(settings.DB_PATH) as db:
+        await db.execute("PRAGMA journal_mode=WAL")
         await db.executescript(_SCHEMA)
         await db.commit()
 
