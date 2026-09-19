@@ -1,0 +1,9 @@
+# 体积优化：避免将本地依赖/构建产物/编辑器文件拷入镜像
+node_modules
+dist
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.DS_Store

@@ -1,0 +1,31 @@
+# 运行时数据与密钥（绝不入库）
+.env
+backend/.env
+data/
+backend/data/
+*.db
+*.db-journal
+*.sqlite*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+*.egg-info/
+
+# Node / 前端构建产物
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.tsbuildinfo
+
+# 编辑器与系统
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+logs/

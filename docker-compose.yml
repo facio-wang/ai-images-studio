@@ -1,0 +1,29 @@
+# AI Images Studio 一键部署（构建上下文为仓库根目录）
+services:
+  studio:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: ai-images-studio:0.1.0
+    container_name: ai-images-studio
+    restart: unless-stopped
+    # 容器内访问宿主网络: COMFYUI_URL 默认 http://host.docker.internal:8188
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "8191:8191"
+    volumes:
+      # SQLite 与生成资产持久化目录
+      - ./data:/app/data
+    environment:
+      # rembg 模型缓存指向持久化卷，避免容器重建后重新下载(1GB)
+      - U2NET_HOME=/app/data/u2net
+    env_file:
+      - .env
+    healthcheck:
+      # 根路径 / 由后端 meta_router 提供（无需鉴权）
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8191/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
