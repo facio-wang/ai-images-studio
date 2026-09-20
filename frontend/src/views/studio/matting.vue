@@ -15,8 +15,9 @@
           <div class="card-title">抠图模型</div>
           <ElSelect v-model="model" style="width: 100%">
             <ElOption label="u2net（轻量 · CPU 友好 · 推荐）" value="u2net" />
+            <ElOption label="u2netp（极速 · 低配设备）" value="u2netp" />
             <ElOption label="bria-rmbg（效果好 · 需 GPU/强 CPU）" value="bria-rmbg" />
-            <ElOption label="birefnet（高精度发丝边缘 · 需强算力）" value="birefnet" />
+            <ElOption label="birefnet-general（高精度发丝边缘 · 需强算力）" value="birefnet-general" />
           </ElSelect>
 
           <div class="card-title" style="margin-top: 16px">上传图片</div>

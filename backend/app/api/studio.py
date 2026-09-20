@@ -11,6 +11,14 @@ from app.services import asset_service, chat_service, model_service, system_serv
 
 router = APIRouter(dependencies=[Depends(require_auth)])
 
+# rembg 合法模型名（与 rembg sessions_class 对齐；birefnet 需带后缀，如 birefnet-general）
+MATTING_MODELS = {
+    "u2net", "u2netp", "u2net_human_seg", "u2net_cloth_seg",
+    "bria-rmbg", "silueta", "isnet-general-use", "isnet-anime",
+    "birefnet-general", "birefnet-general-lite", "birefnet-portrait",
+    "birefnet-dis", "birefnet-hrsod", "birefnet-massive",
+}
+
 # 系统信息（无需鉴权，用于前端健康检查与系统状态面板）
 meta_router = APIRouter()
 
@@ -141,6 +149,9 @@ async def matting(payload: dict, db=Depends(get_db)):
     """提交抠图任务：asset_id 或 image_base64 二选一"""
     if not payload.get("asset_id") and not payload.get("image_base64"):
         return fail(400, "需要 asset_id 或 image_base64")
+    model = payload.get("model")
+    if model and model not in MATTING_MODELS:
+        return fail(400, f"不支持的抠图模型: {model}，可选: {', '.join(sorted(MATTING_MODELS))}")
     task = await task_service.create_task(db, "matting", payload)
     return ok(task)
 
@@ -148,6 +159,8 @@ async def matting(payload: dict, db=Depends(get_db)):
 @router.post("/api/matting/upload")
 async def matting_upload(request: Request, model: str = "bria-rmbg", db=Depends(get_db)):
     """直接上传图片并提交抠图任务，body 为原始图片字节"""
+    if model not in MATTING_MODELS:
+        return fail(400, f"不支持的抠图模型: {model}，可选: {', '.join(sorted(MATTING_MODELS))}")
     file = await request.body()
     if not file:
         return fail(400, "请求体不能为空")
