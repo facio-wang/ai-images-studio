@@ -62,7 +62,7 @@ Design goals:
 ### Conversational creation
 - Rule-based intent routing (generate / matting / asset query / task query) with a `LlmAdapter` interface reserved for LLM orchestration
 - Chinese instructions like "帮我生成一张赛博朋克城市夜景" → intent → prompt extraction → queued → results embedded back into the conversation
-- Instruction-style prompts (e.g. "生成一张《铠甲勇士》炎龙侠单人展示图") are automatically rewritten into **descriptive scene prompts** with proper nouns preserved, greatly improving character hit rate
+- Instruction-style prompts (e.g. "多啦A梦单人展示图") are automatically rewritten into **descriptive scene prompts** with proper nouns preserved, greatly improving character hit rate
 
 ### Prompt enhancement
 - **Z-Image Turbo (native Chinese)**: instruction-style requests are rewritten into descriptive Chinese via the configured LLM; descriptive prompts pass through untouched
