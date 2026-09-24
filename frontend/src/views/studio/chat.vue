@@ -14,16 +14,24 @@
       <span class="tip-right">生图 · 抠图 · 资产/任务查询</span>
     </div>
 
-    <!-- 生图服务未启动横幅（移植自 webUI-v1.0 健康指示灯） -->
+    <!-- 生图服务未启动横幅（移植自 webUI-v1.0 健康指示灯），附一键启动入口 -->
     <ElAlert
       v-if="serviceDown"
       type="warning"
       :closable="false"
       show-icon
       title="生图服务（ComfyUI 8188）未启动：发送生图/抠图请求会直接得到失败提示"
-      description="请在 Win11 宿主机启动 ComfyUI 后刷新本页；查询类对话不受影响。"
       style="margin-bottom: 14px"
-    />
+    >
+      <template #default>
+        <div class="alert-ops">
+          <span>请在 Win11 宿主机启动 ComfyUI 后重试；查询类对话不受影响。</span>
+          <ElButton size="small" type="warning" plain :loading="starting" @click="startService">
+            {{ starting ? `启动中 ${startElapsed}s…` : '⚡ 一键启动' }}
+          </ElButton>
+        </div>
+      </template>
+    </ElAlert>
 
     <div class="chat-layout">
       <!-- 中间聊天流 -->
@@ -145,16 +153,16 @@ import {
   fetchAssetsByIds,
   getAsset,
   getQuickCommands,
-  getSystemStatus,
   getTask,
   listChatMessages,
   listChatSessions,
   pollTask,
   retryTask,
   sendChat,
-  SystemStatus,
   taskAssetIds
 } from '@/api/studio'
+import { storeToRefs } from 'pinia'
+import { useSystemStatusStore } from '@/store/modules/systemStatus'
 import { ASSET_BADGE_CLASS, TASK_TYPE_TEXT } from './utils'
 import GenDetailDialog from './components/GenDetailDialog.vue'
 import './style.scss'
@@ -179,7 +187,10 @@ const taskFailed = ref<Record<number, boolean>>({})
 const retryingTaskId = ref<number | null>(null)
 const detailVisible = ref(false)
 const detailAsset = ref<StudioAsset | null>(null)
-const serviceDown = ref(false)
+/** 生图服务状态：全局共享 store（顶栏/工作台/本页共用同一轮询器与一键启动） */
+const sysStore = useSystemStatusStore()
+const { serviceDown, starting, startElapsed } = storeToRefs(sysStore)
+const startService = () => sysStore.startService()
 
 /** 消息内产物详情弹窗 */
 const viewAsset = async (asset: StudioAsset) => {
@@ -375,13 +386,8 @@ onMounted(async () => {
   } catch {
     // 快捷指令拉取失败时使用空列表
   }
-  // 生图服务状态预检：未启动时页面顶部给横幅提示（移植自 webUI-v1.0 健康指示灯）
-  try {
-    const res = await getSystemStatus()
-    serviceDown.value = res.data?.comfyui.status !== 'running'
-  } catch {
-    serviceDown.value = false
-  }
+  // 生图服务状态刷新：未启动时页面顶部横幅给出一键启动入口（轮询由顶栏共享 store 负责）
+  await sysStore.fetchStatus()
 })
 </script>
 
@@ -422,6 +428,17 @@ onMounted(async () => {
         color: var(--art-gray-500);
         font-size: 11px;
       }
+    }
+
+    /* 服务未启动横幅内：说明文字 + 一键启动按钮同行 */
+    .alert-ops {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 4px;
+      font-size: 12.5px;
     }
 
     .chat-layout {

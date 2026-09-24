@@ -107,7 +107,7 @@
   const quickLinks: QuickLink[] = [
     { name: '登录', path: RoutesAlias.Login },
     { name: '注册', path: RoutesAlias.Register },
-    { name: '忘记密码', path: RoutesAlias.ForgetPassword }
+    { name: '忘记密码', path: RoutesAlias.ForgetPwd }
   ]
 
   const handleAppClick = (path: string) => {

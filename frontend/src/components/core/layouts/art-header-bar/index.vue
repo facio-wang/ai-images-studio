@@ -23,9 +23,6 @@
           </div>
         </div>
 
-        <!-- 快速入口 -->
-        <ArtFastEnter v-if="width >= 1200" />
-
         <!-- 面包屑 -->
         <ArtBreadcrumb
           v-if="(showCrumbs && isLeftMenu) || (showCrumbs && isDualMenu)"
@@ -40,6 +37,9 @@
       </div>
 
       <div class="right">
+        <!-- 生图服务状态（ComfyUI 连通性 + 一键启动入口，窄屏隐藏） -->
+        <ArtServiceStatus v-if="width >= 900" />
+
         <!-- 搜索 -->
         <div class="search-wrap">
           <div class="search-input" @click="openSearchDialog">
@@ -63,41 +63,6 @@
           >
             <i class="iconfont-sys">{{ isFullscreen ? '&#xe62d;' : '&#xe8ce;' }}</i>
           </div>
-        </div>
-        <!-- 通知 -->
-        <div class="btn-box notice-btn" @click="visibleNotice">
-          <div class="btn notice-button">
-            <i class="iconfont-sys notice-btn">&#xe6c2;</i>
-            <span class="count notice-btn"></span>
-          </div>
-        </div>
-        <!-- 聊天 -->
-        <div class="btn-box chat-btn" @click="openChat">
-          <div class="btn chat-button">
-            <i class="iconfont-sys">&#xe89a;</i>
-            <span class="dot"></span>
-          </div>
-        </div>
-        <!-- 语言 -->
-        <div class="btn-box" v-if="showLanguage">
-          <el-dropdown @command="changeLanguage" popper-class="langDropDownStyle">
-            <div class="btn language-btn">
-              <i class="iconfont-sys">&#xe611;</i>
-            </div>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <div v-for="item in languageOptions" :key="item.value" class="lang-btn-item">
-                  <el-dropdown-item
-                    :command="item.value"
-                    :class="{ 'is-selected': locale === item.value }"
-                  >
-                    <span class="menu-txt">{{ item.label }}</span>
-                    <i v-if="locale === item.value" class="iconfont-sys">&#xe621;</i>
-                  </el-dropdown-item>
-                </div>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
         </div>
         <!-- 设置 -->
         <div class="btn-box" @click="openSetting">
@@ -168,13 +133,11 @@
       </div>
     </div>
     <ArtWorkTab />
-
-    <art-notification v-model:value="showNotice" ref="notice" />
   </div>
 </template>
 
 <script setup lang="ts">
-  import { LanguageEnum, MenuTypeEnum, MenuWidth } from '@/enums/appEnum'
+  import { MenuTypeEnum, MenuWidth } from '@/enums/appEnum'
   import { useSettingStore } from '@/store/modules/setting'
   import { useUserStore } from '@/store/modules/user'
   import { useFullscreen } from '@vueuse/core'
@@ -184,10 +147,7 @@
   import { mittBus } from '@/utils/sys'
   import { useMenuStore } from '@/store/modules/menu'
   import AppConfig from '@/config'
-  import { languageOptions } from '@/locales'
   import { UserService } from '@/api/usersApi'
-  const isWindows = navigator.userAgent.includes('Windows')
-  const { locale } = useI18n()
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()
@@ -196,7 +156,6 @@
   const {
     showMenuButton,
     showRefreshButton,
-    showLanguage,
     menuOpen,
     showCrumbs,
     systemThemeColor,
@@ -210,9 +169,10 @@
 
   const { menuList } = storeToRefs(useMenuStore())
 
-  const showNotice = ref(false)
-  const notice = ref(null)
   const userMenuPopover = ref()
+
+  const isWindows = navigator.userAgent.includes('Windows')
+  const { locale } = useI18n()
 
   const isLeftMenu = computed(() => menuType.value === MenuTypeEnum.LEFT)
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
@@ -233,11 +193,6 @@
 
   onMounted(() => {
     initLanguage()
-    document.addEventListener('click', bodyCloseNotice)
-  })
-
-  onUnmounted(() => {
-    document.removeEventListener('click', bodyCloseNotice)
   })
 
   const { isFullscreen, toggle: toggleFullscreen } = useFullscreen()
@@ -306,13 +261,6 @@
     locale.value = language.value
   }
 
-  const changeLanguage = (lang: LanguageEnum) => {
-    if (locale.value === lang) return
-    locale.value = lang
-    userStore.setLanguage(lang)
-    reload(50)
-  }
-
   const openSetting = () => {
     mittBus.emit('openSetting')
 
@@ -326,28 +274,6 @@
 
   const openSearchDialog = () => {
     mittBus.emit('openSearchDialog')
-  }
-
-  const bodyCloseNotice = (e: any) => {
-    let { className } = e.target
-
-    if (showNotice.value) {
-      if (typeof className === 'object') {
-        showNotice.value = false
-        return
-      }
-      if (className.indexOf('notice-btn') === -1) {
-        showNotice.value = false
-      }
-    }
-  }
-
-  const visibleNotice = () => {
-    showNotice.value = !showNotice.value
-  }
-
-  const openChat = () => {
-    mittBus.emit('openChat')
   }
 
   const lockScreen = () => {

@@ -39,12 +39,17 @@
         <span class="svc-dot"></span>
         <span class="svc-text">
           生图服务（ComfyUI）
-          {{ sysStatus?.comfyui.status === 'running' ? '运行中' : '未启动' }}
+          {{ running ? '运行中' : '未启动' }}
         </span>
-        <span v-if="sysStatus?.comfyui.status === 'running'" class="svc-meta">
-          v{{ sysStatus.comfyui.version || '?' }} · 队列 {{ sysStatus.comfyui.queue_running }}/{{ sysStatus.comfyui.queue_pending }}
+        <span v-if="running" class="svc-meta">
+          v{{ sysStatus?.comfyui.version || '?' }} · 队列 {{ sysStatus?.comfyui.queue_running }}/{{ sysStatus?.comfyui.queue_pending }}
         </span>
-        <span v-else class="svc-meta warn">生图/对话生图功能暂不可用，请在 Win11 宿主机启动 ComfyUI（端口 8188）</span>
+        <template v-else>
+          <span class="svc-meta warn">生图/对话生图功能暂不可用，请在 Win11 宿主机启动 ComfyUI（端口 8188）</span>
+          <ElButton size="small" type="primary" plain :loading="starting" @click="startService">
+            {{ starting ? `启动中 ${startElapsed}s…` : '⚡ 一键启动' }}
+          </ElButton>
+        </template>
       </div>
       <div class="res-meters">
         <div
@@ -134,7 +139,9 @@
 
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
-import { getSystemStatus, listAssets, listTasks, StudioAsset, StudioTask, SystemStatus } from '@/api/studio'
+import { storeToRefs } from 'pinia'
+import { listAssets, listTasks, StudioAsset, StudioTask } from '@/api/studio'
+import { useSystemStatusStore } from '@/store/modules/systemStatus'
 import OnboardingGuide from './components/OnboardingGuide.vue'
 import './style.scss'
 
@@ -143,23 +150,16 @@ defineOptions({ name: 'StudioHome' })
 const guideRef = ref<InstanceType<typeof OnboardingGuide>>()
 const openGuide = () => guideRef.value?.open()
 
+/** 生图服务状态：全局共享 store（顶栏/对话页/工作台共用一个轮询器） */
+const sysStore = useSystemStatusStore()
+const { status: sysStatus, running, starting, startElapsed } = storeToRefs(sysStore)
+const startService = () => sysStore.startService()
+
 const todayTasks = ref(0)
 const activeTasks = ref(0)
 const assetTotal = ref(0)
 const typeCounts = ref<Record<string, number>>({})
 const recentAssets = ref<StudioAsset[]>([])
-const sysStatus = ref<SystemStatus | null>(null)
-let sysTimer: ReturnType<typeof setInterval> | null = null
-
-/** 系统状态：ComfyUI 连通性 + GPU/内存（30s 轮询，移植自 webUI-v1.0） */
-const loadSystem = async () => {
-  try {
-    const res = await getSystemStatus()
-    sysStatus.value = res.data
-  } catch {
-    // 状态获取失败保持上次值
-  }
-}
 
 const meterPct = (ratio: number | null | undefined) =>
   `${Math.round(Math.min(1, Math.max(0, ratio ?? 0)) * 100)}%`
@@ -211,12 +211,12 @@ onMounted(() => {
   loadStats()
   loadTypeCounts()
   loadRecent()
-  loadSystem()
-  sysTimer = setInterval(loadSystem, 30000)
+  sysStore.fetchStatus()
+  sysStore.startPolling()
 })
 
 onUnmounted(() => {
-  if (sysTimer) clearInterval(sysTimer)
+  sysStore.stopPolling()
 })
 </script>
 

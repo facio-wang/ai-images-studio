@@ -258,7 +258,7 @@ All business endpoints require `Authorization: Bearer <STUDIO_TOKEN>`.
 ## ❓ FAQ
 
 **Q: Everything says "generation service not started"?**
-Make sure ComfyUI is running at the configured `COMFYUI_URL` and reachable from the deploy box (use `host.docker.internal` for host-run ComfyUI). Verify with `curl http://<comfyui>:8188/system_stats`.
+The workspace / chat page / top-bar "service" button all offer **one-click start**: with Docker deployments, double-click `scripts/host/install-autostart.bat` on the Windows host to register the resident launcher (adjust the ComfyUI path in `scripts/host/start_comfyui.bat` if needed) and set `COMFYUI_START_AGENT=http://host.docker.internal:8192` in `.env`. When the backend runs natively on Windows, set `COMFYUI_START_SCRIPT` instead. With neither configured, the button falls back to manual instructions. Still unreachable? Check ComfyUI at `COMFYUI_URL` (`curl http://<comfyui>:8188/system_stats`).
 
 **Q: GGUF models don't show up after sync?**
 Install the [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF) plugin and restart ComfyUI; once `/object_info` exposes the `UnetLoaderGGUF` node, sync works.

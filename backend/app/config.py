@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 # 加载 backend/.env（存在才加载，docker 场景直接用环境变量）
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+# 兼容仓库根目录 .env（docker-compose 的 env_file 即它；本机裸跑 uvicorn 时也一并读取）
+load_dotenv(BASE_DIR.parent / ".env")
 
 
 def _get_bool(key: str, default: bool = False) -> bool:
@@ -34,6 +36,17 @@ class Settings:
     # ComfyUI 生图引擎
     COMFYUI_URL: str = os.getenv("COMFYUI_URL", "http://127.0.0.1:8188")
     COMFYUI_TIMEOUT: int = int(os.getenv("COMFYUI_TIMEOUT", "300"))
+
+    # 一键启动 ComfyUI（两种方式二选一，都不配则一键启动按钮降级为手动指引提示）：
+    # 1) 后端直跑 Windows 且与 ComfyUI 同机：配启动脚本路径（等价资源管理器双击）
+    #    COMFYUI_START_SCRIPT=D:\AI\ComfyUI\start_comfyui.bat
+    # 2) 后端在 Docker/Linux（本仓库默认形态）：配宿主机启动助手地址，
+    #    助手脚本在仓库 scripts/host/comfyui_launcher.py，于 Win11 宿主机常驻
+    #    COMFYUI_START_AGENT=http://host.docker.internal:8192
+    COMFYUI_START_SCRIPT: str = os.getenv("COMFYUI_START_SCRIPT", "")
+    COMFYUI_START_AGENT: str = os.getenv("COMFYUI_START_AGENT", "")
+    # 启动后轮询探活的最长等待秒数（首次加载模型可能较慢）
+    COMFYUI_START_TIMEOUT: int = int(os.getenv("COMFYUI_START_TIMEOUT", "90"))
 
     # Z-Image Turbo（GGUF 底模）配套组件：文本编码器与 VAE 位于 ComfyUI 对应模型目录
     ZIMAGE_TEXT_ENCODER: str = os.getenv("STUDIO_ZIMAGE_TEXT_ENCODER", "qwen_3_4b_fp8_mixed.safetensors")

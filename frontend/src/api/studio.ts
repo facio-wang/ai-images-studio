@@ -199,6 +199,17 @@ export function getSystemStatus() {
   return request.get<BaseResponse<SystemStatus>>({ url: '/api/system/status', timeout: 10000 })
 }
 
+/** 一键启动 ComfyUI 的结果：status 标识启动链路走到了哪一步 */
+export interface ComfyStartResult {
+  status: 'started' | 'already_running' | 'timeout' | 'no_script' | 'unsupported' | 'error'
+  message: string
+}
+
+/** 一键启动 ComfyUI：后端拉起 COMFYUI_START_SCRIPT 并阻塞探活，最长约 COMFYUI_START_TIMEOUT 秒 */
+export function startComfyUI() {
+  return request.post<BaseResponse<ComfyStartResult>>({ url: '/api/system/comfyui/start', timeout: 180000 })
+}
+
 // ---------- 生图 ----------
 
 export interface GenerateParams {

@@ -49,6 +49,15 @@ async def system_status() -> dict:
     return ok(await system_service.system_status())
 
 
+@router.post("/api/system/comfyui/start")
+async def start_comfyui():
+    """一键启动 ComfyUI：拉起 COMFYUI_START_SCRIPT 并轮询探活，阻塞至多 COMFYUI_START_TIMEOUT 秒。
+
+    没配启动脚本（如 Docker 部署形态）时返回 no_script 手动指引，不报错。
+    """
+    return ok(await system_service.start_comfyui())
+
+
 # ---------- 任务中心 ----------
 
 @router.get("/api/tasks")
@@ -120,11 +129,12 @@ async def generate(payload: dict, db=Depends(get_db)):
     prompt = (payload.get("prompt") or "").strip()
     if not prompt:
         return fail(400, "prompt 不能为空")
-    # 预检：生图服务未启动时立即告知用户，而不是任务入队后静默重试耗尽
+    # 预检：生图服务未启动时立即告知用户（含一键启动入口），而不是任务入队后静默重试耗尽
     if not await system_service.comfy_ping():
         return fail(
             503,
-            f"生图服务（ComfyUI {settings.COMFYUI_URL}）未启动或不可达，请先在 Win11 宿主机启动 ComfyUI 后重试",
+            f"生图服务（ComfyUI {settings.COMFYUI_URL}）未启动或不可达，"
+            "可点击页面右上角「生图服务」一键启动，或在 Win11 宿主机启动 ComfyUI 后重试",
         )
     params = {
         "prompt": prompt,
@@ -283,7 +293,7 @@ async def chat(payload: dict, db=Depends(get_db)):
                 "message_id": 0,
                 "content": (
                     f"⚠️ 生图服务（ComfyUI {settings.COMFYUI_URL}）当前未启动，无法执行生图/抠图。"
-                    "请先在 Win11 宿主机启动 ComfyUI（运行 comfyui 启动脚本，端口 8188），"
+                    "可点击页面右上角「生图服务」一键启动，或在 Win11 宿主机启动 ComfyUI（端口 8188），"
                     "启动成功后重新发送本条消息即可。"
                 ),
                 "intent": "service_down",

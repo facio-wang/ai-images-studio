@@ -5,7 +5,7 @@ export enum RoutesAlias {
   Home = '/index/index', // 布局容器
   Login = '/auth/login', // 登录
   Register = '/auth/register', // 注册
-  ForgetPassword = '/auth/forget-password', // 忘记密码
+  ForgetPwd = '/auth/forget-pwd', // 忘记密码（模板遗留页面，无入口）
   FeishuCallback = '/auth/feishu/callback', // 飞书登录回调
   Exception404 = '/exception/404', // 404
   Welcome = '/creation/home', // 工作台概览页（登录后落地页）
