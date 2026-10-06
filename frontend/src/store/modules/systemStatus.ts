@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ComfyStartResult, getSystemStatus, startComfyUI, SystemStatus } from '@/api/studio'
+import { ComfyResult, getSystemStatus, startComfyUI, stopComfyUI, SystemStatus } from '@/api/studio'
 
 const POLL_INTERVAL = 30000
 
@@ -16,6 +16,8 @@ export const useSystemStatusStore = defineStore(
     const status = ref<SystemStatus | null>(null)
     /** 一键启动进行中：按钮 loading 与启动耗时展示共用 */
     const starting = ref(false)
+    /** 一键停止进行中 */
+    const stopping = ref(false)
     /** 启动已等待秒数（前端计时，与后端探活互相印证） */
     const startElapsed = ref(0)
 
@@ -52,7 +54,7 @@ export const useSystemStatusStore = defineStore(
     }
 
     /** 一键启动：后端拉起脚本并阻塞探活，返回后立即刷新状态并按结果提示 */
-    async function startService(): Promise<ComfyStartResult | null> {
+    async function startService(): Promise<ComfyResult | null> {
       if (starting.value) return null
       starting.value = true
       startElapsed.value = 0
@@ -78,6 +80,30 @@ export const useSystemStatusStore = defineStore(
       }
     }
 
-    return { status, starting, startElapsed, running, serviceDown, fetchStatus, startPolling, stopPolling, startService }
+    /** 一键停止：经宿主机助手终止 ComfyUI 进程，完成后刷新状态并按结果提示 */
+    async function stopService(): Promise<ComfyResult | null> {
+      if (stopping.value) return null
+      stopping.value = true
+      try {
+        const res = await stopComfyUI()
+        const result = res.data
+        if (result) {
+          if (result.status === 'stopped') {
+            ElMessage.success(result.message)
+          } else {
+            ElMessage.warning(result.message)
+          }
+        }
+        await fetchStatus()
+        return result
+      } catch {
+        // 请求层已统一弹错误提示
+        return null
+      } finally {
+        stopping.value = false
+      }
+    }
+
+    return { status, starting, stopping, startElapsed, running, serviceDown, fetchStatus, startPolling, stopPolling, startService, stopService }
   }
 )

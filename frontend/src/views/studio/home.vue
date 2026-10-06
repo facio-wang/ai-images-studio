@@ -44,6 +44,17 @@
         <span v-if="running" class="svc-meta">
           v{{ sysStatus?.comfyui.version || '?' }} · {{ $t('studio.common.service.queue') }} {{ sysStatus?.comfyui.queue_running }}/{{ sysStatus?.comfyui.queue_pending }}
         </span>
+        <ElButton
+          v-if="running"
+          size="small"
+          type="danger"
+          plain
+          :loading="stopping"
+          :title="$t('studio.common.service.stopTip')"
+          @click="confirmStop"
+        >
+          {{ $t('studio.common.service.stopBtn') }}
+        </ElButton>
         <template v-else>
           <span class="svc-meta warn">{{ $t('studio.common.service.manualHint') }}</span>
           <ElButton size="small" type="primary" plain :loading="starting" @click="startService">
@@ -140,6 +151,8 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { storeToRefs } from 'pinia'
+import { ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import { listAssets, listTasks, StudioAsset, StudioTask } from '@/api/studio'
 import { useSystemStatusStore } from '@/store/modules/systemStatus'
 import OnboardingGuide from './components/OnboardingGuide.vue'
@@ -152,9 +165,28 @@ const guideRef = ref<InstanceType<typeof OnboardingGuide>>()
 const openGuide = () => guideRef.value?.open()
 
 /** 生图服务状态：全局共享 store（顶栏/对话页/工作台共用一个轮询器） */
+const { t } = useI18n()
 const sysStore = useSystemStatusStore()
-const { status: sysStatus, running, starting, startElapsed } = storeToRefs(sysStore)
+const { status: sysStatus, running, starting, stopping, startElapsed } = storeToRefs(sysStore)
 const startService = () => sysStore.startService()
+
+/** 停止服务前二次确认（中断任务/释放显存是破坏性动作） */
+const confirmStop = async () => {
+  try {
+    await ElMessageBox.confirm(
+      t('studio.common.service.stopConfirm'),
+      t('studio.common.service.stopConfirmTitle'),
+      {
+        type: 'warning',
+        confirmButtonText: t('studio.common.service.stopBtn'),
+        cancelButtonText: t('studio.common.actions.cancel')
+      }
+    )
+  } catch {
+    return
+  }
+  sysStore.stopService()
+}
 
 const todayTasks = ref(0)
 const activeTasks = ref(0)

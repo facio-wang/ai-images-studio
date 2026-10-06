@@ -83,6 +83,18 @@
               : t('studio.common.service.startBtn')
           }}
         </ElButton>
+        <ElButton
+          v-else
+          class="svc-start"
+          type="danger"
+          plain
+          size="small"
+          :loading="stopping"
+          :title="t('studio.common.service.stopTip')"
+          @click="stop"
+        >
+          {{ t('studio.common.service.stopBtn') }}
+        </ElButton>
       </template>
       <p v-else class="svc-warn">{{ t('studio.common.service.detecting') }}</p>
     </div>
@@ -92,6 +104,7 @@
 <script setup lang="ts">
   import { computed, ref } from 'vue'
   import { useI18n } from 'vue-i18n'
+  import { ElMessageBox } from 'element-plus'
   import { useSystemStatusStore } from '@/store/modules/systemStatus'
 
   defineOptions({ name: 'ArtServiceStatus' })
@@ -102,6 +115,7 @@
 
   const running = computed(() => sysStore.running)
   const starting = computed(() => sysStore.starting)
+  const stopping = computed(() => sysStore.stopping)
   const startElapsed = computed(() => sysStore.startElapsed)
   const comfy = computed(() => sysStore.status?.comfyui)
 
@@ -118,6 +132,24 @@
   }
 
   const start = () => sysStore.startService()
+
+  /** 停止服务前二次确认（中断任务/释放显存是破坏性动作） */
+  const stop = async () => {
+    try {
+      await ElMessageBox.confirm(
+        t('studio.common.service.stopConfirm'),
+        t('studio.common.service.stopConfirmTitle'),
+        {
+          type: 'warning',
+          confirmButtonText: t('studio.common.service.stopBtn'),
+          cancelButtonText: t('studio.common.actions.cancel')
+        }
+      )
+    } catch {
+      return
+    }
+    sysStore.stopService()
+  }
 
   const fmtMB = (v?: number | null) => (v == null || Number.isNaN(v) ? '—' : `${Math.round(v)} MB`)
 </script>

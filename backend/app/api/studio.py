@@ -58,6 +58,15 @@ async def start_comfyui():
     return ok(await system_service.start_comfyui())
 
 
+@router.post("/api/system/comfyui/stop")
+async def stop_comfyui():
+    """一键停止 ComfyUI：经宿主机助手终止其记录的进程，并轮询确认服务下线。
+
+    仅对由一键启动（助手记录 PID）拉起的服务有效；返回 {status, message}。
+    """
+    return ok(await system_service.stop_comfyui())
+
+
 # ---------- art-design-pro 模板遗留接口兼容（/admin/*） ----------
 # 前端框架内置调用：App.vue 进入时拉用户信息、顶栏退出登录。项目是单用户 Token 部署，
 # 身份与登录页写死的本地身份保持一致；不实现则每次进入/退出都弹 "Not Found" 报错。

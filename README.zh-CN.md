@@ -258,7 +258,7 @@ ai-images-studio/
 ## ❓ 常见问题
 
 **Q：生图一直提示"生图服务未启动"？**
-工作台 / 对话页 / 顶栏「生图服务」按钮均提供**一键启动**：Docker 部署时在宿主机双击 `scripts/host/install-autostart.bat` 注册常驻启动助手（并按需改 `scripts/host/start_comfyui.bat` 里的 ComfyUI 路径），`.env` 配置 `COMFYUI_START_AGENT=http://host.docker.internal:8192` 即可一键拉起；后端直跑 Windows 时改配 `COMFYUI_START_SCRIPT` 指向启动脚本。两者都未配置时按钮会给出手动指引。仍连不上请确认 ComfyUI 已在 `COMFYUI_URL` 上运行（`curl http://<comfyui>:8188/system_stats` 验证）。
+工作台 / 对话页 / 顶栏「生图服务」按钮均提供**一键启动**（服务在后台无窗口运行，不会弹出可被误关的控制台）：Docker 部署时在宿主机双击 `scripts/host/install-autostart.bat` 注册常驻启动助手（并按需改 `scripts/host/start_comfyui.bat` 里的 ComfyUI 路径），`.env` 配置 `COMFYUI_START_AGENT=http://host.docker.internal:8192` 即可一键拉起；后端直跑 Windows 时改配 `COMFYUI_START_SCRIPT` 指向启动脚本。两者都未配置时按钮会给出手动指引。服务运行时，顶栏「生图服务」面板与工作台状态条提供**一键停止**（终止后台进程、立即释放显存；仅对由一键启动拉起的服务有效）。仍连不上请确认 ComfyUI 已在 `COMFYUI_URL` 上运行（`curl http://<comfyui>:8188/system_stats` 验证）。
 
 **Q：模型列表同步不到 GGUF 底模？**
 需在 ComfyUI 安装 [ComfyUI-GGUF](https://github.com/city96/ComfyUI-GGUF) 插件并重启，`/object_info` 中出现 `UnetLoaderGGUF` 节点后同步即可。

@@ -92,6 +92,52 @@ async def system_status() -> dict:
     return result
 
 
+async def stop_comfyui() -> dict:
+    """一键停止 ComfyUI：让宿主机助手终止其记录的进程，并轮询确认服务下线。
+
+    仅支持经助手（COMFYUI_START_AGENT）拉起的服务——助手记录了启动 PID；
+    手动在宿主机窗口里启动的服务请直接关闭其控制台窗口。
+    """
+    agent = settings.COMFYUI_START_AGENT.strip()
+    if not agent:
+        return {
+            "status": "no_agent",
+            "message": "尚未配置 COMFYUI_START_AGENT：一键停止依赖宿主机启动助手记录的进程 PID，"
+            "请在 .env 配置后使用",
+        }
+    try:
+        async with httpx.AsyncClient(timeout=10, trust_env=False) as client:
+            r = await client.post(
+                f"{agent.rstrip('/')}/stop", json={"token": settings.STUDIO_TOKEN}
+            )
+    except Exception as exc:
+        logger.warning("宿主机启动助手不可达: %s", exc)
+        return {
+            "status": "error",
+            "message": f"无法连接宿主机启动助手（{agent}）：请确认助手已常驻运行"
+            "（仓库 scripts/host/install-autostart.bat 注册开机自启）",
+        }
+
+    if r.status_code != 200:
+        try:
+            msg = r.json().get("message", "")
+        except Exception:
+            msg = r.text[:200]
+        return {"status": "error", "message": f"停止助手返回 {r.status_code}：{msg}"}
+
+    # 指令已受理：轮询确认服务真正下线（释放显存可能有几秒延迟）
+    deadline = time.time() + 15
+    while time.time() < deadline:
+        await asyncio.sleep(2)
+        if not await comfy_ping():
+            logger.info("ComfyUI 已停止")
+            return {"status": "stopped", "message": "生图服务（ComfyUI）已停止，显存已释放"}
+    return {
+        "status": "timeout",
+        "message": "停止指令已执行，但服务仍在响应（可能由其他方式启动），请手动关闭",
+    }
+
+
 async def start_comfyui() -> dict:
     """一键启动 ComfyUI：拉起启动脚本（直跑形态）或宿主机助手（Docker 形态），并轮询探活到上线。
 

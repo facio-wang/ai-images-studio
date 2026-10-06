@@ -48,6 +48,10 @@ export const commonModule = {
         gpuIdle: '空闲',
         startBtn: '⚡ 一键启动',
         startingBtn: '启动中 {n}s…',
+        stopBtn: '⏹ 停止服务',
+        stopTip: '停止 ComfyUI 并释放显存',
+        stopConfirmTitle: '停止生图服务',
+        stopConfirm: '确认停止 ComfyUI？未完成的生成任务会中断，显存与内存将立即释放。',
         startHint:
           '生图/对话生图功能暂不可用。可一键拉起启动脚本（需后端与 ComfyUI 同机），或在 Win11 宿主机手动启动。',
         manualHint: '生图/对话生图功能暂不可用，请在 Win11 宿主机启动 ComfyUI（端口 8188）',
@@ -103,6 +107,11 @@ export const commonModule = {
         gpuIdle: 'free',
         startBtn: '⚡ Quick Start',
         startingBtn: 'Starting {n}s…',
+        stopBtn: '⏹ Stop',
+        stopTip: 'Stop ComfyUI and free VRAM',
+        stopConfirmTitle: 'Stop generation engine',
+        stopConfirm:
+          'Stop ComfyUI now? Running generation tasks will be interrupted and VRAM/memory released immediately.',
         startHint:
           'Generation is unavailable. Launch the start script with one click (backend must share the host with ComfyUI), or start ComfyUI manually.',
         manualHint:

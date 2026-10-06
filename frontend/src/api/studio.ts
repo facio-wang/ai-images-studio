@@ -199,15 +199,20 @@ export function getSystemStatus() {
   return request.get<BaseResponse<SystemStatus>>({ url: '/api/system/status', timeout: 10000 })
 }
 
-/** 一键启动 ComfyUI 的结果：status 标识启动链路走到了哪一步 */
-export interface ComfyStartResult {
-  status: 'started' | 'already_running' | 'timeout' | 'no_script' | 'unsupported' | 'error'
+/** 一键启动/停止 ComfyUI 的结果：status 标识链路走到了哪一步 */
+export interface ComfyResult {
+  status: 'started' | 'already_running' | 'stopped' | 'timeout' | 'no_script' | 'no_agent' | 'unsupported' | 'error'
   message: string
 }
 
 /** 一键启动 ComfyUI：后端拉起 COMFYUI_START_SCRIPT 并阻塞探活，最长约 COMFYUI_START_TIMEOUT 秒 */
 export function startComfyUI() {
-  return request.post<BaseResponse<ComfyStartResult>>({ url: '/api/system/comfyui/start', timeout: 180000 })
+  return request.post<BaseResponse<ComfyResult>>({ url: '/api/system/comfyui/start', timeout: 180000 })
+}
+
+/** 一键停止 ComfyUI：后端经宿主机助手终止记录的进程并确认下线 */
+export function stopComfyUI() {
+  return request.post<BaseResponse<ComfyResult>>({ url: '/api/system/comfyui/stop', timeout: 60000 })
 }
 
 // ---------- 生图 ----------

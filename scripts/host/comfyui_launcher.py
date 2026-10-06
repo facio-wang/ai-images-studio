@@ -38,6 +38,7 @@ def _load_repo_token() -> str:
 class LauncherHandler(BaseHTTPRequestHandler):
     token: str = ""
     script: str = ""
+    pid_file: str = ""
     last_start: float = 0.0
 
     def _reply(self, code: int, message: str) -> None:
@@ -54,6 +55,8 @@ class LauncherHandler(BaseHTTPRequestHandler):
         self._reply(404, "not found")
 
     def do_POST(self):  # noqa: N802
+        if self.path == "/stop":
+            return self._handle_stop()
         if self.path != "/start":
             return self._reply(404, "not found")
 
@@ -77,7 +80,40 @@ class LauncherHandler(BaseHTTPRequestHandler):
 
         LauncherHandler.last_start = time.time()
         print(f"[comfyui-launcher] 已拉起启动脚本: {self.script}")
-        return self._reply(200, "已拉起 ComfyUI 启动脚本")
+        return self._reply(200, "已后台拉起 ComfyUI（无窗口）")
+
+    def _handle_stop(self):
+        """一键停止：终止本助手此前记录的 ComfyUI 进程（PID 记录在 comfyui.pid）"""
+        length = int(self.headers.get("Content-Length") or 0)
+        try:
+            payload = json.loads(self.rfile.read(length) or b"{}")
+        except ValueError:
+            return self._reply(400, "请求体不是合法 JSON")
+        if not self.token or payload.get("token") != self.token:
+            return self._reply(403, "token 校验失败")
+
+        pid_file = Path(self.pid_file)
+        if not pid_file.exists():
+            return self._reply(
+                404,
+                "没有可停止的记录：当前服务不是由一键启动拉起的（或 PID 记录已清除），请直接关闭其控制台窗口",
+            )
+        try:
+            pid = int(pid_file.read_text(encoding="ascii").strip())
+        except (OSError, ValueError):
+            pid_file.unlink(missing_ok=True)
+            return self._reply(500, "PID 记录损坏，已清除；请手动关闭 ComfyUI")
+
+        try:
+            # Windows 下 os.kill(pid, 9) 等价 TerminateProcess，无需额外依赖
+            os.kill(pid, 9)
+        except OSError as exc:
+            pid_file.unlink(missing_ok=True)
+            return self._reply(500, f"停止失败（进程可能已自行退出）: {exc}")
+
+        pid_file.unlink(missing_ok=True)
+        print(f"[comfyui-launcher] 已停止 ComfyUI (pid={pid})")
+        return self._reply(200, f"已停止 ComfyUI (pid={pid})")
 
     def log_message(self, fmt, *args):  # 静默默认访问日志，只保留关键动作
         pass
@@ -86,12 +122,15 @@ class LauncherHandler(BaseHTTPRequestHandler):
 def main() -> None:
     parser = argparse.ArgumentParser(description="AI Images Studio ComfyUI 启动助手")
     parser.add_argument("--port", type=int, default=8192)
-    parser.add_argument("--script", default=str(Path(__file__).with_name("start_comfyui.bat")))
+    # 默认拉起隐藏窗口版启动器：ComfyUI 在后台运行，避免误关控制台窗口导致服务退出
+    parser.add_argument("--script", default=str(Path(__file__).with_name("start_comfyui_hidden.vbs")))
+    parser.add_argument("--pidfile", default=str(Path(__file__).with_name("comfyui.pid")))
     parser.add_argument("--token", default=_load_repo_token(), help="鉴权 token，默认取仓库 .env 的 STUDIO_TOKEN")
     args = parser.parse_args()
 
     LauncherHandler.token = args.token
     LauncherHandler.script = args.script
+    LauncherHandler.pid_file = args.pidfile
     if not args.token:
         print("[comfyui-launcher] 警告：未配置 token，任何来源都能触发启动（建议在仓库 .env 设置 STUDIO_TOKEN）")
 
