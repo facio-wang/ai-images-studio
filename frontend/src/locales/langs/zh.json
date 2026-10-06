@@ -376,6 +376,9 @@
     "studioHelp": {
       "title": "帮助中心"
     },
+    "loraTrain": {
+      "title": "LoRA 训练"
+    },
     "studioSettings": {
       "title": "系统设置"
     },

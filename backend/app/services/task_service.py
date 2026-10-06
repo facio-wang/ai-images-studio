@@ -256,6 +256,13 @@ async def _execute_claimed(db: aiosqlite.Connection, task: dict) -> None:
             " updated_at=datetime('now','localtime') WHERE id=?",
             (json.dumps(result, ensure_ascii=False), task_id),
         )
+        # 对话消息回填：AI 回复先落库时任务尚未执行（asset_ids 为空），
+        # 产物入库后写回关联消息，保证重新进入会话时历史图片可见
+        if result.get("asset_ids"):
+            await db.execute(
+                "UPDATE chat_messages SET asset_ids=? WHERE task_id=? AND (asset_ids IS NULL OR asset_ids='')",
+                (",".join(str(a) for a in result["asset_ids"]), task_id),
+            )
         await db.commit()
         logger.info("任务完成 #%s type=%s", task_id, task["type"])
     except Exception as exc:

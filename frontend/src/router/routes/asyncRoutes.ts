@@ -81,6 +81,12 @@ export const asyncRoutes: AppRouteRecord[] = [
         meta: { title: 'menus.studioTasks.title', icon: ICONS.tasks, keepAlive: true }
       },
       {
+        path: 'train',
+        name: 'StudioTrain',
+        component: '/studio/train',
+        meta: { title: 'menus.loraTrain.title', icon: ICONS.tasks, keepAlive: true }
+      },
+      {
         path: 'help',
         name: 'StudioHelp',
         component: '/studio/help',

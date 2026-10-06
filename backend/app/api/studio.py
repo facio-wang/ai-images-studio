@@ -333,7 +333,9 @@ async def chat(payload: dict, db=Depends(get_db)):
                 "asset_ids": [],
             }
         )
-    result = await chat_service.send_message(db, payload.get("session_id"), message)
+    result = await chat_service.send_message(
+        db, payload.get("session_id"), message, payload.get("params")
+    )
     return ok(result)
 
 

@@ -32,3 +32,4 @@ logs/
 
 # 安全扫描工具缓存（Mimosa）
 .mimosa/
+scripts/host/*.pid

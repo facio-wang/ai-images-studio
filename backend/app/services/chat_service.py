@@ -43,8 +43,8 @@ class RuleOrchestrator:
                 return intent
         return "unknown"
 
-    async def handle(self, db: aiosqlite.Connection, session_id: int, message: str) -> dict:
-        """处理用户消息，返回 {content, intent, task_id, asset_ids}"""
+    async def handle(self, db: aiosqlite.Connection, session_id: int, message: str, params: dict | None = None) -> dict:
+        """处理用户消息，返回 {content, intent, task_id, asset_ids}；params 为可选生图参数"""
         intent = self.detect_intent(message)
 
         if intent == "generate":
@@ -61,7 +61,9 @@ class RuleOrchestrator:
                     "task_id": None,
                     "asset_ids": [],
                 }
-            task = await task_service.create_task(db, "generate", {"prompt": prompt, "count": 1})
+            task = await task_service.create_task(
+                db, "generate", {"prompt": prompt, "count": 1, **(params or {})}
+            )
             return {
                 "content": f"好的，已创建生图任务 #{task['id']}，正在排队执行：「{prompt}」。完成后可在资产库查看。",
                 "intent": intent,
@@ -155,7 +157,35 @@ async def get_or_create_session(db: aiosqlite.Connection, session_id: int | None
 
 
 async def list_sessions(db: aiosqlite.Connection) -> list[dict]:
-    return await fetch_all(db, "SELECT * FROM chat_sessions ORDER BY id DESC LIMIT 50")
+    """会话列表 + 会话级统计与缩略图（供新会话侧栏：首图缩略、消息数、图片消息数）"""
+    sessions = await fetch_all(db, "SELECT * FROM chat_sessions ORDER BY id DESC LIMIT 50")
+    result = []
+    for s in sessions:
+        sid = s["id"]
+        stats = await fetch_one(
+            db,
+            "SELECT COUNT(*) AS msgs, "
+            "SUM(CASE WHEN asset_ids != '' THEN 1 ELSE 0 END) AS img_msgs, "
+            "MAX(CASE WHEN asset_ids != '' THEN asset_ids END) AS last_asset_ids "
+            "FROM chat_messages WHERE session_id=?",
+            (sid,),
+        )
+        thumb = None
+        last_ids = (stats["last_asset_ids"] or "") if stats else ""
+        if last_ids:
+            first_id = last_ids.split(",")[0].strip()
+            if first_id.isdigit():
+                row = await fetch_one(db, "SELECT thumb_url FROM assets WHERE id=?", (int(first_id),))
+                thumb = row["thumb_url"] if row else None
+        result.append(
+            {
+                **s,
+                "msg_count": stats["msgs"] if stats else 0,
+                "img_count": stats["img_msgs"] if stats else 0,
+                "thumb": thumb,
+            }
+        )
+    return result
 
 
 async def delete_session(db: aiosqlite.Connection, session_id: int) -> bool:
@@ -175,15 +205,29 @@ async def get_messages(db: aiosqlite.Connection, session_id: int) -> list[dict]:
     )
 
 
-async def send_message(db: aiosqlite.Connection, session_id: int | None, message: str) -> dict:
-    """发消息主流程：落用户消息 → 编排 → 落 AI 回复 → 返回"""
+async def send_message(
+    db: aiosqlite.Connection,
+    session_id: int | None,
+    message: str,
+    params: dict | None = None,
+) -> dict:
+    """发消息主流程：落用户消息 → 编排 → 落 AI 回复 → 返回。
+
+    params 为可选生图参数（negative/width/height/steps/cfg/seed），生图意图时合并进任务参数
+    （消息内嵌参数面板与"以此参数重新生成"复用同一通道，保证产物落会话）。
+    """
     session = await get_or_create_session(db, session_id)
+    # 首条消息自动命名会话（新会话默认标题为"新会话"）
+    if session["title"] == "新会话":
+        await db.execute(
+            "UPDATE chat_sessions SET title=? WHERE id=?", (message[:24], session["id"])
+        )
     await db.execute(
         "INSERT INTO chat_messages(session_id, role, content) VALUES(?,?,?)",
         (session["id"], "user", message),
     )
 
-    outcome = await orchestrator.handle(db, session["id"], message)
+    outcome = await orchestrator.handle(db, session["id"], message, params)
 
     asset_ids_str = ",".join(str(a) for a in outcome.get("asset_ids", []))
     cur = await db.execute(

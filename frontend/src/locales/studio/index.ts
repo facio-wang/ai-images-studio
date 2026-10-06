@@ -12,6 +12,7 @@ import { libraryModule } from './library'
 import { authModule } from './auth'
 import { settingsModule } from './settings'
 import { personalModule } from './personal'
+import { trainModule } from './train'
 
 const zh = {
   ...commonModule.zh,
@@ -22,7 +23,8 @@ const zh = {
   ...libraryModule.zh,
   ...authModule.zh,
   ...settingsModule.zh,
-  ...personalModule.zh
+  ...personalModule.zh,
+  ...trainModule.zh
 }
 
 const en = {
@@ -34,7 +36,8 @@ const en = {
   ...libraryModule.en,
   ...authModule.en,
   ...settingsModule.en,
-  ...personalModule.en
+  ...personalModule.en,
+  ...trainModule.en
 }
 
 export const studioMessages: Record<string, Record<string, unknown>> = { zh, en }

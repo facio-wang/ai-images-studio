@@ -376,6 +376,9 @@
     "studioHelp": {
       "title": "Help Center"
     },
+    "loraTrain": {
+      "title": "LoRA Training"
+    },
     "studioSettings": {
       "title": "Settings"
     },

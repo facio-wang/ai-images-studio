@@ -78,6 +78,10 @@ export interface ChatSession {
   id: number
   title: string
   created_at: string
+  /** 会话级统计与缩略图（list_sessions 返回） */
+  msg_count?: number
+  img_count?: number
+  thumb?: string | null
 }
 
 export interface QuickCommand {
@@ -86,7 +90,7 @@ export interface QuickCommand {
 }
 
 /** 解析后端可能返回 JSON 字符串/对象的字段 */
-function parseMaybeJson<T>(value: unknown): T {
+export function parseMaybeJson<T>(value: unknown): T {
   if (typeof value === 'string') {
     try {
       return JSON.parse(value) as T
@@ -414,7 +418,7 @@ export function listChatMessages(sessionId: number) {
 }
 
 /** 发送消息：AI 编排（生图/抠图/查询） */
-export function sendChat(data: { message: string; session_id?: number }) {
+export function sendChat(data: { message: string; session_id?: number; params?: Record<string, unknown> }) {
   return request.post<BaseResponse<ChatSendResult>>({ url: '/api/chat', data, timeout: 60000 })
 }
 

@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from app.api import studio
+from app.api import lora, studio
 from app.config import settings
 from app.models import init_db
 from app.response import register_exception_handlers
@@ -45,6 +45,7 @@ register_exception_handlers(app)
 # 业务路由（Bearer 鉴权）
 app.include_router(studio.meta_router)
 app.include_router(studio.router)
+app.include_router(lora.router)
 
 # 资产静态文件（目录级只读托管，内网环境）
 app.mount(settings.ASSETS_URL_PREFIX, StaticFiles(directory=settings.ASSETS_DIR), name="assets")
