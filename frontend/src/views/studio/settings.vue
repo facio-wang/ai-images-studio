@@ -22,6 +22,49 @@
           <ElDescriptionsItem :label="$t('studio.settings.engine')">{{ $t('studio.settings.engineValue') }}</ElDescriptionsItem>
         </ElDescriptions>
 
+        <!-- 本地运行设备（ComfyUI 上报的 GPU / 内存信息） -->
+        <div class="card-title device-title">{{ $t('studio.settings.devices') }}</div>
+        <ElTable
+          :data="devices"
+          size="small"
+          class="device-table"
+          :empty-text="status?.comfyui.status === 'stopped' ? $t('studio.settings.devicesOffline') : $t('studio.settings.devicesEmpty')"
+        >
+          <ElTableColumn prop="name" :label="$t('studio.settings.deviceName')" min-width="200" show-overflow-tooltip>
+            <template #default="{ row }">
+              <span class="dev-name">{{ row.name || '—' }}</span>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="type" :label="$t('studio.settings.deviceType')" width="90">
+            <template #default="{ row }">
+              <ElTag size="small" :type="row.type === 'cuda' ? 'success' : 'info'">{{ row.type || '—' }}</ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="torch_version" :label="$t('studio.settings.torchVer')" width="130" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.torch_version || '—' }}</template>
+          </ElTableColumn>
+          <ElTableColumn :label="$t('studio.settings.vramTotal')" width="100" align="right">
+            <template #default="{ row }">{{ fmtGb(row.vram_total_mb) }}</template>
+          </ElTableColumn>
+          <ElTableColumn :label="$t('studio.settings.vramFree')" width="100" align="right">
+            <template #default="{ row }">{{ fmtGb(row.vram_free_mb) }}</template>
+          </ElTableColumn>
+          <ElTableColumn :label="$t('studio.settings.vramUsage')" min-width="160">
+            <template #default="{ row }">
+              <div class="vram-meter">
+                <ElProgress :percentage="vramPct(row)" :stroke-width="8" :show-text="false" />
+                <span class="v">{{ vramPct(row) }}%</span>
+              </div>
+            </template>
+          </ElTableColumn>
+        </ElTable>
+        <div class="ram-line">
+          {{ $t('studio.settings.ramLine', {
+            free: fmtGb(status?.comfyui.ram_free_mb ?? null),
+            total: fmtGb(status?.comfyui.ram_total_mb ?? null)
+          }) }}
+        </div>
+
         <div class="tip-block">
           {{ $t('studio.settings.secretTip') }}
         </div>
@@ -49,15 +92,29 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { getSystemMeta, SystemMeta } from '@/api/studio'
+import { computed, onMounted, ref } from 'vue'
+import { getSystemMeta, getSystemStatus, SystemMeta, SystemStatus } from '@/api/studio'
 import './style.scss'
 
 defineOptions({ name: 'StudioSettings' })
 
 const meta = ref<SystemMeta | null>(null)
+const status = ref<SystemStatus | null>(null)
 // 模板中不能直接访问 window.location，提前取好
 const host = window.location.host
+
+/** ComfyUI 上报的本地计算设备列表（服务未启动时为空数组走空态） */
+const devices = computed(() => status.value?.comfyui.devices ?? [])
+
+/** MB → GB 文案（保留 1 位小数，未知显示 —） */
+const fmtGb = (mb: number | null | undefined) =>
+  mb == null ? '—' : `${(mb / 1024).toFixed(1)} GB`
+
+const vramPct = (row: { vram_total_mb: number | null; vram_free_mb: number | null }) => {
+  const total = row.vram_total_mb ?? 0
+  if (total <= 0) return 0
+  return Math.min(100, Math.round(((total - (row.vram_free_mb ?? 0)) / total) * 100))
+}
 
 const load = async () => {
   try {
@@ -65,6 +122,12 @@ const load = async () => {
     meta.value = res.data
   } catch {
     // 元信息加载失败时展示占位
+  }
+  try {
+    const res = await getSystemStatus()
+    status.value = res.data
+  } catch {
+    // 服务状态失败时设备表走空态
   }
 }
 
@@ -77,6 +140,42 @@ onMounted(load)
     grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr);
     gap: 16px;
     align-items: start;
+  }
+
+  .device-title {
+    margin-top: 18px;
+  }
+
+  .device-table {
+    width: 100%;
+
+    .dev-name {
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
+    .vram-meter {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+
+      .el-progress {
+        flex: 1;
+      }
+
+      .v {
+        font-size: 11.5px;
+        color: var(--art-gray-600);
+        width: 36px;
+        text-align: right;
+      }
+    }
+  }
+
+  .ram-line {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--art-gray-500);
   }
 
   .tip-block {
