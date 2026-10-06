@@ -228,7 +228,7 @@
         <!-- 底部输入区 -->
         <div class="chat-input">
           <div class="chips">
-            <span v-for="cmd in quickCommands" :key="cmd.label" class="quick-chip" @click="send(cmd.text)">
+            <span v-for="cmd in quickCommands" :key="cmd.label" class="quick-chip" :title="$t('studio.chat.chipFillTip')" @click="fillInput(cmd.text)">
               {{ cmd.label }}
             </span>
           </div>
@@ -552,6 +552,16 @@ const viewAsset = async (asset: StudioAsset) => {
   } catch {
     // 列表数据兜底
   }
+}
+
+/** 快捷词条：只填充输入框并聚焦，是否发送由用户决定 */
+const fillInput = (text: string) => {
+  input.value = text
+  nextTick(() => {
+    const el = document.querySelector('.chat-input textarea') as HTMLTextAreaElement | null
+    el?.focus()
+    el?.setSelectionRange(el.value.length, el.value.length)
+  })
 }
 
 /** 发送消息：AI 回复带 task_id 时轮询任务，done 后刷新产物图 */

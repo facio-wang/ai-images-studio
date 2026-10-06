@@ -54,7 +54,8 @@ export const chatModule = {
       sendFailed: '发送失败',
       taskRequeued: '任务 #{n} 已重新入队',
       retryFailed: '重试失败',
-      loadMessagesFailed: '加载会话消息失败'
+      loadMessagesFailed: '加载会话消息失败',
+      chipFillTip: '点击填入输入框',
     }
   },
   en: {
@@ -108,7 +109,8 @@ export const chatModule = {
       sendFailed: 'Failed to send the message',
       taskRequeued: 'Task #{n} re-queued',
       retryFailed: 'Retry failed',
-      loadMessagesFailed: 'Failed to load chat messages'
+      loadMessagesFailed: 'Failed to load chat messages',
+      chipFillTip: 'Click to fill the input box',
     }
   }
 } as { zh: Record<string, unknown>; en: Record<string, unknown> }
