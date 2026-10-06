@@ -55,6 +55,7 @@ export const chatModule = {
       taskRequeued: '任务 #{n} 已重新入队',
       retryFailed: '重试失败',
       loadMessagesFailed: '加载会话消息失败',
+      loadSessionsFailed: '加载会话列表失败，请刷新重试',
       chipFillTip: '点击填入输入框',
     }
   },
@@ -110,6 +111,7 @@ export const chatModule = {
       taskRequeued: 'Task #{n} re-queued',
       retryFailed: 'Retry failed',
       loadMessagesFailed: 'Failed to load chat messages',
+      loadSessionsFailed: 'Failed to load sessions - please refresh',
       chipFillTip: 'Click to fill the input box',
     }
   }

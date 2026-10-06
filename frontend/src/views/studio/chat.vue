@@ -732,7 +732,8 @@ const loadSessions = async () => {
     const res = await listChatSessions()
     sessions.value = res.data ?? []
   } catch {
-    // 静默：侧栏会话列表加载失败不阻塞主流程
+    // 不再静默：列表加载失败用户会误以为历史丢失
+    ElMessage.error(t('studio.chat.loadSessionsFailed'))
   }
 }
 

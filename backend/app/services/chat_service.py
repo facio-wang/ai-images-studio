@@ -157,34 +157,36 @@ async def get_or_create_session(db: aiosqlite.Connection, session_id: int | None
 
 
 async def list_sessions(db: aiosqlite.Connection) -> list[dict]:
-    """会话列表 + 会话级统计与缩略图（供新会话侧栏：首图缩略、消息数、图片消息数）"""
+    """会话列表 + 会话级统计与缩略图（供会话侧栏：首图缩略、消息数、图片消息数）。
+
+    统计/缩略图是装饰性信息：单会话查询失败时降级为 0/None，不让整个列表 500。
+    """
     sessions = await fetch_all(db, "SELECT * FROM chat_sessions ORDER BY id DESC LIMIT 50")
     result = []
     for s in sessions:
         sid = s["id"]
-        stats = await fetch_one(
-            db,
-            "SELECT COUNT(*) AS msgs, "
-            "SUM(CASE WHEN asset_ids != '' THEN 1 ELSE 0 END) AS img_msgs, "
-            "MAX(CASE WHEN asset_ids != '' THEN asset_ids END) AS last_asset_ids "
-            "FROM chat_messages WHERE session_id=?",
-            (sid,),
-        )
-        thumb = None
-        last_ids = (stats["last_asset_ids"] or "") if stats else ""
-        if last_ids:
-            first_id = last_ids.split(",")[0].strip()
-            if first_id.isdigit():
-                row = await fetch_one(db, "SELECT thumb_url FROM assets WHERE id=?", (int(first_id),))
-                thumb = row["thumb_url"] if row else None
-        result.append(
-            {
-                **s,
-                "msg_count": stats["msgs"] if stats else 0,
-                "img_count": stats["img_msgs"] if stats else 0,
-                "thumb": thumb,
-            }
-        )
+        item = {**s, "msg_count": 0, "img_count": 0, "thumb": None}
+        try:
+            stats = await fetch_one(
+                db,
+                "SELECT COUNT(*) AS msgs, "
+                "SUM(CASE WHEN asset_ids != '' THEN 1 ELSE 0 END) AS img_msgs, "
+                "MAX(CASE WHEN asset_ids != '' THEN asset_ids END) AS last_asset_ids "
+                "FROM chat_messages WHERE session_id=?",
+                (sid,),
+            )
+            if stats:
+                item["msg_count"] = stats["msgs"] or 0
+                item["img_count"] = stats["img_msgs"] or 0
+                last_ids = (stats["last_asset_ids"] or "").split(",")[0].strip()
+                if last_ids.isdigit():
+                    row = await fetch_one(
+                        db, "SELECT thumb_path AS thumb_url FROM assets WHERE id=?", (int(last_ids),)
+                    )
+                    item["thumb"] = row["thumb_url"] if row else None
+        except Exception as exc:
+            logger.warning("会话 %s 统计降级: %s", sid, exc)
+        result.append(item)
     return result
 
 
