@@ -1,7 +1,7 @@
 <!-- System logo component -->
 <template>
   <div class="art-logo">
-    <img :style="logoStyle" src="@imgs/common/logo.webp" alt="logo" />
+    <img :style="logoStyle" src="@imgs/common/capybara.png" alt="logo" />
   </div>
 </template>
 
@@ -25,6 +25,10 @@
     img {
       width: 100%;
       height: 100%;
+      /* 白底插画裁圆 + 细边框：暗色侧栏上呈现为圆形头像徽标 */
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 0 0 1px var(--art-border-dashed-color);
     }
   }
 </style>
