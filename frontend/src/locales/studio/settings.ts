@@ -1,0 +1,55 @@
+/** 系统设置页文案（settings：只读运行信息 + 关于卡） */
+export const settingsModule = {
+  zh: {
+    settings: {
+      title: '系统设置',
+      desc: '只读展示运行时信息 · 配置均来自服务端 .env（STUDIO_TOKEN / COMFYUI_URL 等）',
+      refresh: '⟳ 刷新',
+      runInfo: '运行信息',
+      app: '应用',
+      version: '版本',
+      serviceUrl: '服务地址',
+      authMode: '鉴权方式',
+      authModeValue: 'Bearer Token（.env STUDIO_TOKEN，登录页输入）',
+      dataDir: '数据目录',
+      dataDirValue: '/app/data（docker volume 持久化）',
+      engine: '生图引擎',
+      engineValue: 'ComfyUI（端点由 .env COMFYUI_URL 配置，默认 :8188）',
+      secretTip: '🔒 所有密钥仅保存在服务端 .env，前端不提供任何 key 的查看或编辑入口。',
+      about: '关于',
+      aboutDesc: '本地 AI 创作中台 · 对话生图 / 抠图 / 模型与资产管理',
+      versionLabel: '版本',
+      license: '许可',
+      deploy: '部署',
+      deployValue: 'docker compose up -d（端口 8191）',
+      backend: '后端',
+      frontend: '前端'
+    }
+  },
+  en: {
+    settings: {
+      title: 'Settings',
+      desc: 'Read-only runtime info · configuration comes from the server-side .env (STUDIO_TOKEN / COMFYUI_URL, etc.)',
+      refresh: '⟳ Refresh',
+      runInfo: 'Runtime Info',
+      app: 'App',
+      version: 'Version',
+      serviceUrl: 'Service URL',
+      authMode: 'Auth',
+      authModeValue: 'Bearer Token (.env STUDIO_TOKEN, entered on the login page)',
+      dataDir: 'Data Directory',
+      dataDirValue: '/app/data (persisted as a docker volume)',
+      engine: 'Generation Engine',
+      engineValue: 'ComfyUI (endpoint from .env COMFYUI_URL, defaults to :8188)',
+      secretTip: '🔒 All secrets live only in the server-side .env; the frontend offers no way to view or edit keys.',
+      about: 'About',
+      aboutDesc: 'Local AI creation hub · chat-to-image / matting / model & asset management',
+      versionLabel: 'Version',
+      license: 'License',
+      deploy: 'Deploy',
+      deployValue: 'docker compose up -d (port 8191)',
+      backend: 'Backend',
+      frontend: 'Frontend'
+    }
+  }
+} as { zh: Record<string, unknown>; en: Record<string, unknown> }

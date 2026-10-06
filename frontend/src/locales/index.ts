@@ -2,12 +2,9 @@ import { createI18n } from 'vue-i18n'
 import type { I18n, I18nOptions } from 'vue-i18n'
 import { LanguageEnum } from '@/enums/appEnum'
 import { getSystemStorage } from '@/utils/storage'
-
-// 动态导入语言文件
-const messages = {
-  [LanguageEnum.EN]: () => import('./langs/en.json'),
-  [LanguageEnum.ZH]: () => import('./langs/zh.json')
-}
+import { studioMessages } from './studio'
+import zhFramework from './langs/zh.json'
+import enFramework from './langs/en.json'
 
 // 语言选项
 export const languageOptions = [
@@ -29,22 +26,22 @@ const getDefaultLanguage = (): LanguageEnum => {
   }
 }
 
+// 语言包同步静态导入：框架文案（JSON）+ 业务文案（studio TS 模块）在 i18n 创建时就位，
+// 避免异步注入导致菜单/面包屑首屏渲染出原始 key
+const messages = {
+  [LanguageEnum.ZH]: { ...zhFramework, studio: studioMessages[LanguageEnum.ZH] ?? {} },
+  [LanguageEnum.EN]: { ...enFramework, studio: studioMessages[LanguageEnum.EN] ?? {} }
+}
+
 const i18nOptions: I18nOptions = {
   locale: getDefaultLanguage(),
   legacy: false,
   globalInjection: true,
   fallbackLocale: LanguageEnum.ZH,
-  messages: {}
+  messages
 }
 
 const i18n: I18n = createI18n(i18nOptions)
-
-// 异步加载语言文件
-Object.keys(messages).forEach((locale) => {
-  ;(messages as Record<string, () => Promise<any>>)[locale]().then((msg) => {
-    i18n.global.setLocaleMessage(locale, msg.default)
-  })
-})
 
 interface Translation {
   (key: string): string

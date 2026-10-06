@@ -27,6 +27,7 @@ Design goals:
 - **Low-friction deployment** — a single container runs frontend + backend + SQLite; the only external dependency is a ComfyUI instance
 - **Observable & resilient** — a system status panel shows ComfyUI connectivity, GPU VRAM, system memory and queue in real time; when the generation service is down, both the generate page and the chat tell you immediately instead of failing silently
 - **Hardware-tolerant async tasks** — polling-based waiting with smooth progress, transient-failure retry and generous per-task timeouts, so slow GPUs and low-power boxes (ARM mini PCs) are first-class citizens
+- **Bilingual UI** — built-in Chinese / English switch (top-bar language menu) covering menus, pages and interaction messages
 
 ## 🖼️ Screenshots
 
@@ -41,6 +42,14 @@ Design goals:
 | Asset library | Dashboard |
 | --- | --- |
 | ![Assets](docs/screenshots/assets.png) | ![Home](docs/screenshots/home.png) |
+
+### English UI preview
+
+The built-in language menu (top bar) switches the whole interface — menus, pages and messages — between Chinese and English:
+
+| Workspace (EN) | Profile (EN) |
+| --- | --- |
+| ![Workspace EN](docs/screenshots/workspace-en.png) | ![Profile EN](docs/screenshots/profile-en.png) |
 
 ## 🧩 Modules
 

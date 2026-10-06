@@ -3,15 +3,15 @@
   <div class="studio-page chat-page">
     <div class="page-head">
       <div>
-        <h1>对话工作台</h1>
-        <p class="desc">一句话完成生图 / 抠图 / 查询，产物自动入资产库</p>
+        <h1>{{ $t('studio.chat.title') }}</h1>
+        <p class="desc">{{ $t('studio.chat.desc') }}</p>
       </div>
-      <ElButton @click="newSession">＋ 新建会话</ElButton>
+      <ElButton @click="newSession">{{ $t('studio.chat.newSession') }}</ElButton>
     </div>
 
     <div class="chat-tip studio-card">
-      💡 对话模式 · 所有图片处理都可以在这里用一句话完成
-      <span class="tip-right">生图 · 抠图 · 资产/任务查询</span>
+      {{ $t('studio.chat.tip') }}
+      <span class="tip-right">{{ $t('studio.chat.tipRight') }}</span>
     </div>
 
     <!-- 生图服务未启动横幅（移植自 webUI-v1.0 健康指示灯），附一键启动入口 -->
@@ -20,14 +20,14 @@
       type="warning"
       :closable="false"
       show-icon
-      title="生图服务（ComfyUI 8188）未启动：发送生图/抠图请求会直接得到失败提示"
+      :title="$t('studio.common.service.chatBannerTitle')"
       style="margin-bottom: 14px"
     >
       <template #default>
         <div class="alert-ops">
-          <span>请在 Win11 宿主机启动 ComfyUI 后重试；查询类对话不受影响。</span>
+          <span>{{ $t('studio.common.service.chatBannerDesc') }}</span>
           <ElButton size="small" type="warning" plain :loading="starting" @click="startService">
-            {{ starting ? `启动中 ${startElapsed}s…` : '⚡ 一键启动' }}
+            {{ starting ? $t('studio.common.service.startingBtn', { n: startElapsed }) : $t('studio.common.service.startBtn') }}
           </ElButton>
         </div>
       </template>
@@ -39,7 +39,7 @@
         <div ref="flowRef" class="chat-flow">
           <div v-for="msg in messages" :key="msg.id" class="chat-msg" :class="{ rev: msg.role === 'user' }">
             <!-- 头像：圆形字母 -->
-            <div class="chat-ava" :class="msg.role">{{ msg.role === 'user' ? '我' : 'AI' }}</div>
+            <div class="chat-ava" :class="msg.role">{{ msg.role === 'user' ? $t('studio.chat.avaMe') : 'AI' }}</div>
             <div class="chat-bubble">
               <div class="msg-text">{{ msg.content }}</div>
               <!-- 消息内嵌产物图 -->
@@ -50,10 +50,10 @@
                   class="chat-img"
                   :class="{ checker: asset.type === 'matting' }"
                 >
-                  <img :src="asset.url" :alt="asset.labels || asset.filename || `资产#${asset.id}`" />
+                  <img :src="asset.url" :alt="asset.labels || asset.filename || $t('studio.chat.assetAlt', { n: asset.id })" />
                   <div class="thumb-ops">
-                    <ElButton size="small" @click="viewAsset(asset)">🔍 详情</ElButton>
-                    <ElButton size="small" tag="a" :href="asset.url" target="_blank">⬇ 下载</ElButton>
+                    <ElButton size="small" @click="viewAsset(asset)">🔍 {{ $t('studio.common.actions.detail') }}</ElButton>
+                    <ElButton size="small" tag="a" :href="asset.url" target="_blank">⬇ {{ $t('studio.common.actions.download') }}</ElButton>
                   </div>
                 </div>
               </div>
@@ -61,7 +61,7 @@
               <!-- 关联任务失败：气泡下方提供「重试任务」入口 -->
               <div v-if="msg.task_id && taskFailed[msg.task_id]" class="task-retry-row">
                 <ElButton size="small" type="warning" plain :loading="retryingTaskId === msg.task_id" @click="retryMsgTask(msg)">
-                  ⟳ 重试任务 #{{ msg.task_id }}
+                  {{ $t('studio.chat.retryTask', { n: msg.task_id }) }}
                 </ElButton>
               </div>
             </div>
@@ -70,13 +70,13 @@
           <div v-if="waitingTask" class="chat-msg">
             <div class="chat-ava ai">AI</div>
             <div class="chat-bubble">
-              <div class="msg-text">任务 #{{ waitingTask }} 执行中，完成后自动展示产物…</div>
+              <div class="msg-text">{{ $t('studio.chat.taskWaiting', { n: waitingTask }) }}</div>
               <ElIcon class="is-loading spin"><Loading /></ElIcon>
             </div>
           </div>
 
           <div v-if="!messages.length && !waitingTask" class="studio-empty">
-            <span>开始与 AI 对话，例如「生成一张赛博朋克城市夜景」</span>
+            <span>{{ $t('studio.chat.emptyHint') }}</span>
           </div>
         </div>
 
@@ -93,10 +93,10 @@
               type="textarea"
               :rows="2"
               resize="none"
-              placeholder="描述你想做的图片处理，例如：生成一张赛博朋克风格的城市夜景…"
+              :placeholder="$t('studio.chat.inputPlaceholder')"
               @keydown.enter.exact.prevent="send()"
             />
-            <ElButton type="primary" :loading="sending" @click="send()">发送 ➤</ElButton>
+            <ElButton type="primary" :loading="sending" @click="send()">{{ $t('studio.chat.send') }}</ElButton>
           </div>
         </div>
       </div>
@@ -104,7 +104,7 @@
       <!-- 右侧会话资产面板 -->
       <div class="chat-side">
         <div class="studio-card">
-          <div class="card-title">历史会话</div>
+          <div class="card-title">{{ $t('studio.chat.sessionsTitle') }}</div>
           <div class="session-list">
             <div
               v-for="s in sessions"
@@ -113,25 +113,31 @@
               :class="{ on: s.id === sessionId }"
               @click="switchSession(s.id)"
             >
-              <span class="truncate">会话 #{{ s.id }} · {{ s.title }}</span>
+              <span class="truncate">{{ $t('studio.chat.sessionItem', { n: s.id, title: s.title }) }}</span>
+              <span
+                class="session-del"
+                :title="$t('studio.chat.deleteSession')"
+                @click.stop="removeSession(s.id)"
+                >×</span
+              >
             </div>
-            <div v-if="!sessions.length" class="studio-empty"><span>暂无历史会话</span></div>
+            <div v-if="!sessions.length" class="studio-empty"><span>{{ $t('studio.chat.noSessions') }}</span></div>
           </div>
         </div>
 
         <div class="studio-card">
-          <div class="card-title">会话产物</div>
+          <div class="card-title">{{ $t('studio.chat.assetsTitle') }}</div>
           <div class="side-assets">
             <div v-for="asset in sessionAssets" :key="asset.id" class="side-asset">
               <div class="studio-thumb side-thumb" :class="{ checker: asset.type === 'matting' }">
                 <img :src="asset.thumb_url" loading="lazy" />
               </div>
               <div class="side-asset-meta">
-                <span class="truncate">#{{ asset.id }} {{ asset.labels || asset.filename || '未命名' }}</span>
-                <span class="badge-row"><i :class="ASSET_BADGE_CLASS[asset.type]">{{ TASK_TYPE_TEXT[asset.type] }}</i></span>
+                <span class="truncate">#{{ asset.id }} {{ asset.labels || asset.filename || $t('studio.chat.unnamed') }}</span>
+                <span class="badge-row"><i :class="ASSET_BADGE_CLASS[asset.type]">{{ $t(TASK_TYPE_KEY[asset.type]) }}</i></span>
               </div>
             </div>
-            <div v-if="!sessionAssets.length" class="studio-empty"><span>本会话暂无产物</span></div>
+            <div v-if="!sessionAssets.length" class="studio-empty"><span>{{ $t('studio.chat.noAssets') }}</span></div>
           </div>
         </div>
       </div>
@@ -144,12 +150,14 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   ChatMessage,
   ChatSession,
   QuickCommand,
   StudioAsset,
+  deleteChatSession,
   fetchAssetsByIds,
   getAsset,
   getQuickCommands,
@@ -163,11 +171,13 @@ import {
 } from '@/api/studio'
 import { storeToRefs } from 'pinia'
 import { useSystemStatusStore } from '@/store/modules/systemStatus'
-import { ASSET_BADGE_CLASS, TASK_TYPE_TEXT } from './utils'
+import { ASSET_BADGE_CLASS, TASK_TYPE_KEY } from './utils'
 import GenDetailDialog from './components/GenDetailDialog.vue'
 import './style.scss'
 
 defineOptions({ name: 'StudioChat' })
+
+const { t } = useI18n()
 
 interface ChatViewMessage extends ChatMessage {
   assetList: StudioAsset[]
@@ -245,10 +255,10 @@ const send = async (text?: string) => {
         const task = await pollTask(data.task_id, {
           // 生图/抠图耗时取决于硬件（低配设备可能数分钟），轮询自带瞬断重试
           timeoutMs: 600000,
-          onUpdate: (t) => {
+          onUpdate: (task) => {
             // 任务转为 failed 时立即给出明确提示（不再静默等待）
-            if (t.status === 'failed') {
-              ElMessage.error(`任务 #${t.id} 失败：${String(t.error || '').split('\n')[0].slice(0, 120)}`)
+            if (task.status === 'failed') {
+              ElMessage.error(t('studio.chat.taskFailedDetail', { n: task.id, msg: String(task.error || '').split('\n')[0].slice(0, 120) }))
             }
           }
         })
@@ -261,14 +271,14 @@ const send = async (text?: string) => {
       } catch (error) {
         // 轮询抛错（failed/超时）：标记失败态，气泡下方显示重试按钮
         taskFailed.value = { ...taskFailed.value, [data.task_id]: true }
-        ElMessage.error(error instanceof Error ? error.message : '任务执行失败')
+        ElMessage.error(error instanceof Error ? error.message : t('studio.common.taskFailedMsg'))
       } finally {
         waitingTask.value = null
       }
     }
     loadSessions()
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '发送失败')
+    ElMessage.error(error instanceof Error ? error.message : t('studio.chat.sendFailed'))
   } finally {
     sending.value = false
     scrollBottom()
@@ -282,7 +292,7 @@ const retryMsgTask = async (msg: ChatViewMessage) => {
   taskFailed.value = { ...taskFailed.value, [msg.task_id]: false }
   try {
     await retryTask(msg.task_id)
-    ElMessage.success(`任务 #${msg.task_id} 已重新入队`)
+    ElMessage.success(t('studio.chat.taskRequeued', { n: msg.task_id }))
     const task = await pollTask(msg.task_id)
     const ids = taskAssetIds(task)
     if (ids.length) {
@@ -293,7 +303,7 @@ const retryMsgTask = async (msg: ChatViewMessage) => {
   } catch (error) {
     // 重试后仍失败：恢复失败标记，保留重试按钮
     if (msg.task_id) taskFailed.value = { ...taskFailed.value, [msg.task_id]: true }
-    ElMessage.error(error instanceof Error ? error.message : '重试失败')
+    ElMessage.error(error instanceof Error ? error.message : t('studio.chat.retryFailed'))
   } finally {
     retryingTaskId.value = null
     scrollBottom()
@@ -329,8 +339,8 @@ const switchSession = async (id: number) => {
       // 历史消息中关联任务为 failed 时，也提供重试入口
       if (msg.task_id) {
         try {
-          const t = await getTask(msg.task_id)
-          if (t.data?.status === 'failed') failedMap[msg.task_id] = true
+          const task = await getTask(msg.task_id)
+          if (task.data?.status === 'failed') failedMap[msg.task_id] = true
         } catch {
           // 任务查询失败时忽略，不影响消息渲染
         }
@@ -341,7 +351,7 @@ const switchSession = async (id: number) => {
     refreshSessionAssets()
     scrollBottom()
   } catch {
-    ElMessage.error('加载会话消息失败')
+    ElMessage.error(t('studio.chat.loadMessagesFailed'))
   }
 }
 
@@ -357,6 +367,34 @@ const loadSessions = async () => {
     sessions.value = res.data ?? []
   } catch {
     // 静默：侧栏会话列表加载失败不阻塞主流程
+  }
+}
+
+/** 删除会话：移除会话与消息记录；图片资产保留在资产库（到资产库中删除） */
+const removeSession = async (id: number) => {
+  try {
+    await ElMessageBox.confirm(t('studio.chat.confirmDelete', { n: id }), t('studio.chat.deleteSession'), {
+      type: 'warning',
+      confirmButtonText: t('studio.common.actions.confirm'),
+      cancelButtonText: t('studio.common.actions.cancel')
+    })
+  } catch {
+    return
+  }
+  try {
+    await deleteChatSession(id)
+    ElMessage.success(t('studio.chat.sessionDeleted'))
+    await loadSessions()
+    // 删除的是当前会话：清空视图并切入最近一个会话
+    if (sessionId.value === id) {
+      sessionId.value = undefined
+      messages.value = []
+      sessionAssets.value = []
+      waitingTask.value = null
+      if (sessions.value.length) await switchSession(sessions.value[0].id)
+    }
+  } catch {
+    // 请求层已统一弹错误提示
   }
 }
 
@@ -584,6 +622,9 @@ onMounted(async () => {
     }
 
     .session-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
       padding: 8px 10px;
       border-radius: 6px;
       font-size: 12px;
@@ -591,8 +632,38 @@ onMounted(async () => {
       cursor: pointer;
       border: 1px solid transparent;
 
+      .truncate {
+        flex: 1;
+        min-width: 0;
+      }
+
+      /* 删除会话：hover 行时出现的小 × */
+      .session-del {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        flex-shrink: 0;
+        font-size: 14px;
+        line-height: 1;
+        color: var(--art-gray-400, #98a2b3);
+        border-radius: 4px;
+        opacity: 0;
+        transition: all 0.15s;
+
+        &:hover {
+          color: #f87171;
+          background: rgba(248, 113, 113, 0.12);
+        }
+      }
+
       &:hover {
         background: var(--art-gray-200);
+
+        .session-del {
+          opacity: 1;
+        }
       }
 
       &.on {
@@ -600,6 +671,14 @@ onMounted(async () => {
         border-color: rgba(37, 99, 235, 0.4);
         color: var(--art-primary);
         font-weight: 600;
+
+        .session-del {
+          opacity: 0.6;
+        }
+
+        &:hover .session-del {
+          opacity: 1;
+        }
       }
     }
 

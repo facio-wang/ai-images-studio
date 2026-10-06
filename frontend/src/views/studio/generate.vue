@@ -3,26 +3,31 @@
   <div class="studio-page">
     <div class="studio-header">
       <div>
-        <h1>生图</h1>
-        <p class="desc">提交 ComfyUI 文生图任务 · 模型来自「模型中心」已启用的底模</p>
+        <h1>{{ $t('studio.common.taskType.generate') }}</h1>
+        <p class="desc">{{ $t('studio.generate.desc') }}</p>
       </div>
-      <ElButton @click="$router.push('/manage/models')">模型中心 →</ElButton>
+      <ElButton @click="$router.push('/manage/models')">{{ $t('studio.generate.modelsLink') }}</ElButton>
     </div>
 
     <div class="gen-layout">
       <!-- 左参数面板 -->
       <div class="gen-side">
         <div class="studio-card">
-          <div class="card-title">提示词</div>
+          <div class="card-title">{{ $t('studio.generate.prompt') }}</div>
           <ElInput
             v-model="form.prompt"
             type="textarea"
             :rows="5"
-            placeholder="描述你想画的画面，例如：赛博朋克风格的城市夜景，霓虹灯，雨后街道…"
+            :placeholder="$t('studio.generate.promptPlaceholder')"
           />
 
-          <div class="card-title" style="margin-top: 16px">基础模型</div>
-          <ElSelect v-model="form.checkpoint" placeholder="默认底模" style="width: 100%" @change="onCheckpointChange">
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.generate.baseModel') }}</div>
+          <ElSelect
+            v-model="form.checkpoint"
+            :placeholder="$t('studio.generate.baseModelPlaceholder')"
+            style="width: 100%"
+            @change="onCheckpointChange"
+          >
             <ElOption
               v-for="m in checkpointOptions"
               :key="m.id"
@@ -31,13 +36,13 @@
             />
           </ElSelect>
           <div v-if="isZImage" class="model-hint zimage">
-            🈶 Z-Image 原生支持中文：提示词直出、<b>无需配置翻译模型</b>；采样自动固定 8步 · CFG 1（res_multistep）
+            🈶 {{ $t('studio.generate.zimageHintPrefix') }}<b>{{ $t('studio.generate.zimageHintNoTranslate') }}</b>{{ $t('studio.generate.zimageHintSuffix') }}
           </div>
           <div v-else-if="form.checkpoint" class="model-hint">
-            SDXL 系底模：中文提示词将自动翻译/增强为英文后发送（需在模型中心配置翻译模型）
+            {{ $t('studio.generate.sdxlHint') }}
           </div>
 
-          <div class="card-title" style="margin-top: 16px">分辨率</div>
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.generate.resolution') }}</div>
           <div class="size-grid">
             <div
               v-for="preset in sizePresets"
@@ -55,7 +60,7 @@
             </div>
           </div>
 
-          <div class="card-title" style="margin-top: 16px">采样参数</div>
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.generate.samplingParams') }}</div>
           <div class="param-row">
             <span>Steps</span>
             <ElSlider v-model="form.steps" :min="1" :max="60" style="width: 140px" />
@@ -68,12 +73,12 @@
           </div>
           <div class="param-row seed">
             <span>Seed</span>
-            <ElInput v-model="form.seed" style="width: 130px" placeholder="-1 随机" />
-            <ElButton @click="randomSeed">🎲</ElButton>
+            <ElInput v-model="form.seed" style="width: 130px" :placeholder="$t('studio.generate.seedPlaceholder')" />
+            <ElButton :title="$t('studio.generate.randomSeedTip')" @click="randomSeed">🎲</ElButton>
           </div>
 
           <div class="param-row" style="margin-top: 10px">
-            <span>生成数量</span>
+            <span>{{ $t('studio.generate.count') }}</span>
             <ElInputNumber v-model="form.count" :min="1" :max="8" />
           </div>
 
@@ -81,49 +86,49 @@
           <ElCollapse class="text-collapse">
             <ElCollapseItem name="texts">
               <template #title>
-                <span class="card-title" style="margin: 0">添加文字（海报文字叠加）</span>
+                <span class="card-title" style="margin: 0">{{ $t('studio.generate.textsTitle') }}</span>
               </template>
               <div v-for="(t, i) in textItems" :key="i" class="text-item">
                 <div class="text-item-head">
-                  <span>文字 #{{ i + 1 }}</span>
-                  <ElButton size="small" text type="danger" @click="removeText(i)">删除</ElButton>
+                  <span>{{ $t('studio.generate.textItem', { n: i + 1 }) }}</span>
+                  <ElButton size="small" text type="danger" @click="removeText(i)">{{ $t('studio.common.actions.delete') }}</ElButton>
                 </div>
                 <ElInput
                   v-model="t.content"
                   type="textarea"
                   :rows="2"
-                  placeholder="文字内容，支持中英文，换行用回车"
+                  :placeholder="$t('studio.generate.textContentPlaceholder')"
                 />
                 <div class="text-grid">
-                  <label>字号<ElInputNumber v-model="t.size" :min="8" :max="400" size="small" /></label>
-                  <label>颜色<ElColorPicker v-model="t.color" size="small" /></label>
-                  <label>X<ElInput v-model="t.x" size="small" placeholder="像素或 50%" /></label>
-                  <label>Y<ElInput v-model="t.y" size="small" placeholder="像素或 50%" /></label>
+                  <label>{{ $t('studio.generate.fontSize') }}<ElInputNumber v-model="t.size" :min="8" :max="400" size="small" /></label>
+                  <label>{{ $t('studio.generate.color') }}<ElColorPicker v-model="t.color" size="small" /></label>
+                  <label>X<ElInput v-model="t.x" size="small" :placeholder="$t('studio.generate.xyPlaceholder')" /></label>
+                  <label>Y<ElInput v-model="t.y" size="small" :placeholder="$t('studio.generate.xyPlaceholder')" /></label>
                   <label>
-                    对齐
+                    {{ $t('studio.generate.align') }}
                     <ElSelect v-model="t.align" size="small">
-                      <ElOption label="左" value="left" />
-                      <ElOption label="中" value="center" />
-                      <ElOption label="右" value="right" />
+                      <ElOption :label="$t('studio.generate.alignLeft')" value="left" />
+                      <ElOption :label="$t('studio.generate.alignCenter')" value="center" />
+                      <ElOption :label="$t('studio.generate.alignRight')" value="right" />
                     </ElSelect>
                   </label>
                   <label class="check-label">
-                    <ElCheckbox v-model="t.bold" size="small">粗体</ElCheckbox>
+                    <ElCheckbox v-model="t.bold" size="small">{{ $t('studio.generate.bold') }}</ElCheckbox>
                   </label>
                   <label class="check-label">
-                    <ElCheckbox v-model="t.useBg" size="small">背景衬条</ElCheckbox>
+                    <ElCheckbox v-model="t.useBg" size="small">{{ $t('studio.generate.bgBar') }}</ElCheckbox>
                   </label>
                   <label v-if="t.useBg">
-                    衬条色<ElColorPicker v-model="t.bgColor" size="small" />
+                    {{ $t('studio.generate.bgBarColor') }}<ElColorPicker v-model="t.bgColor" size="small" />
                   </label>
                 </div>
               </div>
               <div class="text-actions">
-                <ElButton size="small" @click="addText">+ 添加文字</ElButton>
-                <ElButton size="small" :loading="previewing" @click="previewTexts">👁 预览</ElButton>
+                <ElButton size="small" @click="addText">{{ $t('studio.generate.addText') }}</ElButton>
+                <ElButton size="small" :loading="previewing" @click="previewTexts">👁 {{ $t('studio.common.actions.preview') }}</ElButton>
               </div>
               <div v-if="previewUrl" class="text-preview">
-                <img :src="previewUrl" alt="文字预览" />
+                <img :src="previewUrl" :alt="$t('studio.generate.textPreviewAlt')" />
               </div>
             </ElCollapseItem>
           </ElCollapse>
@@ -136,7 +141,7 @@
           :disabled="!form.prompt.trim()"
           @click="submit"
         >
-          🚀 提交生成任务
+          🚀 {{ $t('studio.generate.submitTask') }}
         </ElButton>
       </div>
 
@@ -144,8 +149,8 @@
       <div class="gen-main">
         <div class="studio-card">
           <div class="card-title">
-            结果画布
-            <span v-if="taskInfo" class="result-meta">任务 #{{ taskInfo.id }} · {{ TASK_STATUS_TEXT[taskInfo.status] }}</span>
+            {{ $t('studio.generate.resultCanvas') }}
+            <span v-if="taskInfo" class="result-meta">{{ $t('studio.generate.taskLabel', { n: taskInfo.id }) }} · {{ $t(TASK_STATUS_KEY[taskInfo.status]) }}</span>
           </div>
 
           <div v-if="submitting || polling" class="gen-waiting">
@@ -153,7 +158,7 @@
               :percent="waitPercent"
               :elapsed-sec="waitElapsed"
               :phase-text="waitPhase"
-              hint="生图速度取决于 ComfyUI 侧显卡性能，低配显卡可能需要几分钟"
+              :hint="$t('studio.generate.waitHint')"
             />
           </div>
 
@@ -170,17 +175,17 @@
               />
               <div class="thumb-ops">
                 <ElButton size="small" tag="a" :href="asset.url" target="_blank">⬇</ElButton>
-                <ElButton size="small" @click="goMatting(asset.id)">✂ 抠图</ElButton>
+                <ElButton size="small" @click="goMatting(asset.id)">✂ {{ $t('studio.common.taskType.matting') }}</ElButton>
               </div>
             </div>
           </div>
 
-          <div v-else class="studio-empty"><span>提交任务后，生成结果将展示在这里</span></div>
+          <div v-else class="studio-empty"><span>{{ $t('studio.generate.emptyResults') }}</span></div>
         </div>
 
         <!-- 底部历史 -->
         <div class="studio-card">
-          <div class="card-title">生成历史</div>
+          <div class="card-title">{{ $t('studio.generate.history') }}</div>
           <div v-if="history.length" class="history-row">
             <div v-for="asset in history" :key="asset.id" class="history-item">
               <div class="studio-thumb history-thumb">
@@ -195,7 +200,7 @@
               <span class="history-label">{{ formatTime(asset.created_at) }}</span>
             </div>
           </div>
-          <div v-else class="studio-empty"><span>暂无生成记录</span></div>
+          <div v-else class="studio-empty"><span>{{ $t('studio.generate.emptyHistory') }}</span></div>
         </div>
       </div>
     </div>
@@ -205,6 +210,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   getAsset,
@@ -218,13 +224,14 @@ import {
   submitGenerate,
   taskAssetIds
 } from '@/api/studio'
-import { fetchRecentAssets, TASK_STATUS_TEXT } from './utils'
+import { fetchRecentAssets, TASK_STATUS_KEY } from './utils'
 import TaskProgress from './components/TaskProgress.vue'
 import './style.scss'
 
 defineOptions({ name: 'StudioGenerate' })
 
 const router = useRouter()
+const { t, locale } = useI18n()
 
 const form = reactive({
   prompt: '',
@@ -256,7 +263,7 @@ const polling = ref(false)
 /** 等待进度状态：目标百分比 / 已等待秒数 / 阶段文案 */
 const waitPercent = ref(4)
 const waitElapsed = ref(0)
-const waitPhase = ref('正在提交…')
+const waitPhase = ref(t('studio.generate.phaseSubmitting'))
 const waitTimer = setInterval(() => {
   if (submitting.value || polling.value) waitElapsed.value++
 }, 1000)
@@ -287,8 +294,8 @@ const isZImage = computed(
 
 const modelLabel = (m: StudioModel) => {
   const parts = [m.name]
-  if (Number(m.is_default)) parts.push('（默认）')
-  if (modelType(m) === 'z_image') parts.push(' 🈶中文直出')
+  if (Number(m.is_default)) parts.push(t('studio.generate.defaultModelTag'))
+  if (modelType(m) === 'z_image') parts.push(t('studio.generate.zimageTag'))
   return parts.join('')
 }
 
@@ -317,7 +324,7 @@ const loadCheckpoints = async () => {
       onCheckpointChange(def.name)
     }
   } catch {
-    ElMessage.error('加载模型列表失败')
+    ElMessage.error(t('studio.generate.loadModelsFailed'))
   }
 }
 
@@ -389,7 +396,7 @@ const buildTextsPayload = (): PosterTextItem[] =>
 const previewTexts = async () => {
   const texts = buildTextsPayload()
   if (!texts.length) {
-    ElMessage.warning('请先填写至少一条文字内容')
+    ElMessage.warning(t('studio.generate.needTextContent'))
     return
   }
   previewing.value = true
@@ -408,7 +415,7 @@ const previewTexts = async () => {
     if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
     previewUrl.value = URL.createObjectURL(res)
   } catch {
-    ElMessage.error('文字预览失败')
+    ElMessage.error(t('studio.generate.previewFailed'))
   } finally {
     previewing.value = false
   }
@@ -422,7 +429,7 @@ const submit = async () => {
   results.value = []
   waitPercent.value = 4
   waitElapsed.value = 0
-  waitPhase.value = '正在提交…'
+  waitPhase.value = t('studio.generate.phaseSubmitting')
   try {
     const res = await submitGenerate({
       prompt,
@@ -439,7 +446,7 @@ const submit = async () => {
     taskInfo.value = res.data
     await poll(res.data.id)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '提交任务失败')
+    ElMessage.error(error instanceof Error ? error.message : t('studio.generate.submitFailed'))
   } finally {
     submitting.value = false
   }
@@ -452,7 +459,7 @@ const submit = async () => {
 const poll = (taskId: number) =>
   new Promise<void>((resolve, reject) => {
     polling.value = true
-    waitPhase.value = '排队等待 GPU…'
+    waitPhase.value = t('studio.generate.phaseQueued')
     waitPercent.value = 10
     let startedAt = 0
     let fails = 0
@@ -464,11 +471,11 @@ const poll = (taskId: number) =>
         taskInfo.value = task
         if (task.status === 'running' && !startedAt) startedAt = Date.now()
         if (task.status === 'queued') {
-          waitPhase.value = '排队等待 GPU…'
+          waitPhase.value = t('studio.generate.phaseQueued')
           waitPercent.value = Math.max(waitPercent.value, 10)
         } else if (task.status === 'running') {
           const runSec = startedAt ? Math.round((Date.now() - startedAt) / 1000) : 0
-          waitPhase.value = '正在生成，请稍候…'
+          waitPhase.value = t('studio.generate.phaseRunning')
           waitPercent.value = Math.min(95, Math.max(waitPercent.value, 15 + runSec * 1.2))
         }
         if (task.status === 'done') {
@@ -480,7 +487,7 @@ const poll = (taskId: number) =>
         }
         if (task.status === 'failed') {
           polling.value = false
-          reject(new Error(task.error || '任务执行失败'))
+          reject(new Error(task.error || t('studio.common.taskFailedMsg')))
           return
         }
         pollTimer = setTimeout(tick, 2000)
@@ -489,7 +496,7 @@ const poll = (taskId: number) =>
         fails++
         if (fails >= 10 || Date.now() - (submitStartedAt || Date.now()) > 900000) {
           polling.value = false
-          reject(new Error('任务状态查询连续失败，请稍后在任务中心查看结果'))
+          reject(new Error(t('studio.generate.pollFailed')))
           return
         }
         pollTimer = setTimeout(tick, Math.min(2000 * fails, 8000))
@@ -515,7 +522,10 @@ const loadResults = async (ids: number[]) => {
 }
 
 const formatTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  new Date(iso).toLocaleTimeString(locale.value === 'zh' ? 'zh-CN' : 'en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
 
 const goMatting = (assetId: number) => {
   router.push({ path: '/studio/matting', query: { asset_id: String(assetId) } })

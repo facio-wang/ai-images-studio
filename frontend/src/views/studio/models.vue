@@ -3,32 +3,32 @@
   <div class="studio-page">
     <div class="studio-header">
       <div>
-        <h1>模型中心</h1>
-        <p class="desc">所有模块（生图 / 翻译 / 抠图）统一从这里管理，各功能页仅选择引用</p>
+        <h1>{{ $t('studio.models.title') }}</h1>
+        <p class="desc">{{ $t('studio.models.desc') }}</p>
       </div>
       <div class="header-actions">
-        <ElButton @click="$router.push('/manage/help')">📖 配置帮助</ElButton>
-        <ElButton @click="syncCheckpoints" :loading="syncing">🔄 同步 ComfyUI 底模</ElButton>
-        <ElButton type="primary" @click="openAdd">＋ 新增模型</ElButton>
+        <ElButton @click="$router.push('/manage/help')">{{ $t('studio.models.helpBtn') }}</ElButton>
+        <ElButton @click="syncCheckpoints" :loading="syncing">{{ $t('studio.models.syncBtn') }}</ElButton>
+        <ElButton type="primary" @click="openAdd">{{ $t('studio.models.addBtn') }}</ElButton>
       </div>
     </div>
 
     <!-- 统计卡 -->
     <div class="stat-grid">
       <div class="studio-card stat-card">
-        <div class="stat-label">{{ categoryText(activeTab) }}数量</div>
+        <div class="stat-label">{{ $t('studio.models.stat.count', { category: categoryText(activeTab) }) }}</div>
         <div class="stat-num blue">{{ countBy(activeTab) }}</div>
-        <div class="stat-sub">模型总数 {{ models.length }} · 底模 {{ countBy('checkpoint') }} · LoRA {{ countBy('lora') }} · 翻译 {{ countBy('translate') }} · 抠图 {{ countBy('matting') }}</div>
+        <div class="stat-sub">{{ $t('studio.models.stat.total', { total: models.length, checkpoint: countBy('checkpoint'), lora: countBy('lora'), translate: countBy('translate'), matting: countBy('matting') }) }}</div>
       </div>
       <div class="studio-card stat-card">
-        <div class="stat-label">启用中</div>
+        <div class="stat-label">{{ $t('studio.models.stat.enabled') }}</div>
         <div class="stat-num cyan">{{ models.filter((m) => isEnabled(m)).length }}</div>
-        <div class="stat-sub">各分区默认模型各 1 个，功能页取默认执行</div>
+        <div class="stat-sub">{{ $t('studio.models.stat.enabledHint') }}</div>
       </div>
       <div class="studio-card stat-card">
-        <div class="stat-label">ComfyUI 端点</div>
+        <div class="stat-label">{{ $t('studio.models.stat.endpoint') }}</div>
         <div class="stat-num purple" style="font-size: 16px; line-height: 40px">ComfyUI :8188</div>
-        <div class="stat-sub">底模列表可从 ComfyUI 一键同步</div>
+        <div class="stat-sub">{{ $t('studio.models.stat.endpointHint') }}</div>
       </div>
     </div>
 
@@ -47,127 +47,131 @@
 
     <div class="studio-card table-card">
       <ElTable :data="filteredModels" style="width: 100%">
-        <ElTableColumn prop="name" label="模型名称" min-width="180">
+        <ElTableColumn prop="name" :label="$t('studio.models.table.name')" min-width="180">
           <template #default="{ row }">
             <span class="model-name">{{ row.name }}</span>
-            <span v-if="isEnabled(row, 'is_default')" class="badge default">默认</span>
+            <span v-if="isEnabled(row, 'is_default')" class="badge default">{{ $t('studio.models.table.default') }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="category" label="类别" width="110">
+        <ElTableColumn prop="category" :label="$t('studio.models.table.category')" width="110">
           <template #default="{ row }">
             <span class="badge" :class="categoryBadge(row.category)">{{ categoryText(row.category) }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn prop="meta" label="附加信息" min-width="220">
+        <ElTableColumn prop="meta" :label="$t('studio.models.table.meta')" min-width="220">
           <template #default="{ row }">
             <!-- 翻译模型：结构化摘要，api_key 打码 -->
             <template v-if="row.category === 'translate' && parseMeta(row).base_url">
               <div class="meta-text translate-meta">
-                <div><span class="meta-key">接口</span>{{ parseMeta(row).base_url }}</div>
-                <div><span class="meta-key">模型</span>{{ parseMeta(row).model_id || '—' }}</div>
-                <div><span class="meta-key">密钥</span>{{ maskKey(parseMeta(row).api_key) }}</div>
+                <div><span class="meta-key">{{ $t('studio.models.table.api') }}</span>{{ parseMeta(row).base_url }}</div>
+                <div><span class="meta-key">{{ $t('studio.models.table.model') }}</span>{{ parseMeta(row).model_id || '—' }}</div>
+                <div><span class="meta-key">{{ $t('studio.models.table.key') }}</span>{{ maskKey(parseMeta(row).api_key) }}</div>
               </div>
             </template>
             <span v-else class="meta-text">{{ row.meta && row.meta !== '{}' ? row.meta : '—' }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn label="启用" width="90">
+        <ElTableColumn :label="$t('studio.models.table.enabled')" width="90">
           <template #default="{ row }">
             <ElSwitch :model-value="isEnabled(row)" @change="(v: any) => toggleEnabled(row, v)" />
           </template>
         </ElTableColumn>
-        <ElTableColumn label="操作" width="200" fixed="right">
+        <ElTableColumn :label="$t('studio.models.table.actions')" width="200" fixed="right">
           <template #default="{ row }">
             <ElButton
               size="small"
               :disabled="isEnabled(row, 'is_default')"
               @click="setDefault(row)"
             >
-              设默认
+              {{ $t('studio.models.table.setDefault') }}
             </ElButton>
-            <ElButton size="small" type="primary" plain @click="openEdit(row)">编辑</ElButton>
-            <ElButton size="small" type="danger" plain @click="remove(row)">删除</ElButton>
+            <ElButton size="small" type="primary" plain @click="openEdit(row)">{{ $t('studio.models.table.edit') }}</ElButton>
+            <ElButton size="small" type="danger" plain @click="remove(row)">{{ $t('studio.common.actions.delete') }}</ElButton>
           </template>
         </ElTableColumn>
       </ElTable>
     </div>
 
     <!-- 新增模型 -->
-    <ElDialog v-model="addVisible" title="新增模型" width="500px">
+    <ElDialog v-model="addVisible" :title="$t('studio.models.dialog.addTitle')" width="500px">
       <ElForm label-width="80px">
-        <ElFormItem label="类别">
+        <ElFormItem :label="$t('studio.models.dialog.category')">
           <ElSelect v-model="addForm.category" style="width: 100%" @change="onAddCategoryChange">
             <ElOption v-for="cat in categories" :key="cat.key" :label="cat.label" :value="cat.key" />
           </ElSelect>
         </ElFormItem>
-        <ElFormItem label="名称">
-          <ElInput v-model="addForm.name" placeholder="模型名称，如 dreamshaperXL" />
+        <ElFormItem :label="$t('studio.models.dialog.name')">
+          <ElInput v-model="addForm.name" :placeholder="$t('studio.models.placeholder.name')" />
         </ElFormItem>
 
         <!-- 翻译模型：结构化配置（OpenAI 兼容接口） -->
         <template v-if="addForm.category === 'translate'">
-          <ElFormItem label="接口地址">
-            <ElInput v-model="addForm.base_url" placeholder="https://api.openai.com/v1 或兼容接口地址" />
+          <ElFormItem :label="$t('studio.models.dialog.baseUrl')">
+            <ElInput v-model="addForm.base_url" :placeholder="$t('studio.models.placeholder.baseUrl')" />
           </ElFormItem>
           <ElFormItem label="API Key">
             <ElInput
               v-model="addForm.api_key"
               type="password"
               show-password
-              placeholder="服务商控制台申请的密钥，如 sk-..."
+              :placeholder="$t('studio.models.placeholder.apiKeyTip')"
             />
           </ElFormItem>
-          <ElFormItem label="模型 ID">
-            <ElInput v-model="addForm.model_id" placeholder="gpt-4o-mini / deepseek-chat 等" />
+          <ElFormItem :label="$t('studio.models.dialog.modelId')">
+            <ElInput v-model="addForm.model_id" :placeholder="$t('studio.models.placeholder.modelId')" />
           </ElFormItem>
-          <ElFormItem label="备注">
-            <ElInput v-model="addForm.meta" type="textarea" :rows="2" placeholder="其他附加信息 JSON（可留空）" />
+          <ElFormItem :label="$t('studio.models.dialog.remark')">
+            <ElInput v-model="addForm.meta" type="textarea" :rows="2" :placeholder="$t('studio.models.placeholder.remark')" />
           </ElFormItem>
           <div class="form-tip">
-            接口地址是提供翻译服务的 API 根地址，API Key 在服务商控制台申请（如 OpenAI 官方、硅基流动、DeepSeek 或自建中转站），
-            模型 ID 是要调用的具体模型名。详见
-            <ElLink type="primary" @click="$router.push('/manage/help')">帮助页</ElLink>
+            {{ $t('studio.models.tip.translate') }}
+            <ElLink type="primary" @click="$router.push('/manage/help')">{{ $t('studio.models.tip.helpLink') }}</ElLink>
           </div>
         </template>
 
         <!-- 其他类别：自由 JSON -->
-        <ElFormItem v-else label="附加信息">
-          <ElInput v-model="addForm.meta" type="textarea" :rows="2" placeholder='JSON，如 {"file": "xxx.safetensors"}（可留空）' />
+        <ElFormItem v-else :label="$t('studio.models.dialog.meta')">
+          <ElInput v-model="addForm.meta" type="textarea" :rows="2" :placeholder="$t('studio.models.placeholder.meta')" />
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="addVisible = false">取消</ElButton>
-        <ElButton type="primary" :loading="adding" @click="submitAdd">确认新增</ElButton>
+        <ElButton @click="addVisible = false">{{ $t('studio.common.actions.cancel') }}</ElButton>
+        <ElButton type="primary" :loading="adding" @click="submitAdd">{{ $t('studio.models.dialog.confirmAdd') }}</ElButton>
       </template>
     </ElDialog>
 
     <!-- 编辑模型 -->
-    <ElDialog v-model="editVisible" :title="`编辑模型 - ${editForm.name}`" width="500px">
+    <ElDialog v-model="editVisible" :title="$t('studio.models.dialog.editTitle', { name: editForm.name })" width="500px">
       <ElForm label-width="80px">
-        <ElFormItem label="名称">
+        <ElFormItem :label="$t('studio.models.dialog.name')">
           <ElInput v-model="editForm.name" />
         </ElFormItem>
         <template v-if="editForm.category === 'translate'">
-          <ElFormItem label="接口地址">
-            <ElInput v-model="editForm.base_url" placeholder="https://api.openai.com/v1 或兼容接口地址" />
+          <ElFormItem :label="$t('studio.models.dialog.baseUrl')">
+            <ElInput v-model="editForm.base_url" :placeholder="$t('studio.models.placeholder.baseUrl')" />
           </ElFormItem>
           <ElFormItem label="API Key">
-            <ElInput v-model="editForm.api_key" type="password" show-password placeholder="留空则保持原密钥不变" />
+            <ElInput
+              v-model="editForm.api_key"
+              type="password"
+              show-password
+              :placeholder="$t('studio.models.placeholder.apiKeyKeep')"
+            />
           </ElFormItem>
-          <ElFormItem label="模型 ID">
-            <ElInput v-model="editForm.model_id" placeholder="gpt-4o-mini / deepseek-chat 等" />
+          <ElFormItem :label="$t('studio.models.dialog.modelId')">
+            <ElInput v-model="editForm.model_id" :placeholder="$t('studio.models.placeholder.modelId')" />
           </ElFormItem>
-          <ElFormItem label="备注">
-            <ElInput v-model="editForm.extraMeta" type="textarea" :rows="2" placeholder="其他附加信息 JSON（可留空）" />
+          <ElFormItem :label="$t('studio.models.dialog.remark')">
+            <ElInput v-model="editForm.extraMeta" type="textarea" :rows="2" :placeholder="$t('studio.models.placeholder.remark')" />
           </ElFormItem>
         </template>
-        <ElFormItem v-else label="附加信息">
+        <ElFormItem v-else :label="$t('studio.models.dialog.meta')">
           <ElInput v-model="editForm.meta" type="textarea" :rows="3" placeholder="JSON" />
         </ElFormItem>
       </ElForm>
       <template #footer>
-        <ElButton @click="editVisible = false">取消</ElButton>
-        <ElButton type="primary" :loading="editing" @click="submitEdit">保存修改</ElButton>
+        <ElButton @click="editVisible = false">{{ $t('studio.common.actions.cancel') }}</ElButton>
+        <ElButton type="primary" :loading="editing" @click="submitEdit">{{ $t('studio.models.dialog.saveEdit') }}</ElButton>
       </template>
     </ElDialog>
   </div>
@@ -175,6 +179,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   addModel,
@@ -189,19 +194,22 @@ import './style.scss'
 
 defineOptions({ name: 'StudioModels' })
 
-/** 四大分区（与后端 CATEGORIES 对齐） */
-const categories: { key: ModelCategory; label: string }[] = [
-  { key: 'checkpoint', label: '底模' },
-  { key: 'lora', label: 'LoRA' },
-  { key: 'translate', label: '翻译' },
-  { key: 'matting', label: '抠图' }
-]
+const { t } = useI18n()
 
-const CATEGORY_TEXT: Record<string, string> = {
-  checkpoint: '底模',
-  lora: 'LoRA',
-  translate: '翻译',
-  matting: '抠图'
+/** 四大分区（与后端 CATEGORIES 对齐） */
+const categories = computed<{ key: ModelCategory; label: string }[]>(() => [
+  { key: 'checkpoint', label: t('studio.models.category.checkpoint') },
+  { key: 'lora', label: t('studio.models.category.lora') },
+  { key: 'translate', label: t('studio.models.category.translate') },
+  { key: 'matting', label: t('studio.models.category.matting') }
+])
+
+/** 类别 → i18n 键（未知类别回退显示原值） */
+const CATEGORY_KEY: Record<string, string> = {
+  checkpoint: 'studio.models.category.checkpoint',
+  lora: 'studio.models.category.lora',
+  translate: 'studio.models.category.translate',
+  matting: 'studio.models.category.matting'
 }
 
 const models = ref<StudioModel[]>([])
@@ -239,7 +247,10 @@ const isEnabled = (m: StudioModel, field: 'enabled' | 'is_default' = 'enabled') 
 
 const countBy = (category: ModelCategory) => models.value.filter((m) => m.category === category).length
 const filteredModels = computed(() => models.value.filter((m) => m.category === activeTab.value))
-const categoryText = (c: string) => CATEGORY_TEXT[c] ?? c
+const categoryText = (c: string) => {
+  const key = CATEGORY_KEY[c]
+  return key ? t(key) : c
+}
 const categoryBadge = (c: string) =>
   ({ checkpoint: 'blue', lora: 'purple', translate: 'cyan', matting: 'cyan' })[c] ?? 'blue'
 
@@ -256,7 +267,7 @@ const parseMeta = (m: StudioModel): Record<string, any> => {
 
 /** api_key 打码：sk-abcd...wxyz */
 const maskKey = (key?: string) => {
-  if (!key) return '未设置'
+  if (!key) return t('studio.models.notSet')
   if (key.length <= 8) return '****'
   return `${key.slice(0, 4)}****${key.slice(-4)}`
 }
@@ -266,7 +277,7 @@ const load = async () => {
     const res = await listModels()
     models.value = res.data ?? []
   } catch {
-    ElMessage.error('加载模型列表失败')
+    ElMessage.error(t('studio.models.message.loadFailed'))
   }
 }
 
@@ -274,27 +285,31 @@ const toggleEnabled = async (m: StudioModel, value: boolean) => {
   try {
     await updateModel(m.id, { enabled: value })
     m.enabled = value ? 1 : 0
-    ElMessage.success(value ? '已启用' : '已停用')
+    ElMessage.success(value ? t('studio.models.message.enabled') : t('studio.models.message.disabled'))
   } catch {
-    ElMessage.error('更新失败')
+    ElMessage.error(t('studio.models.message.updateFailed'))
   }
 }
 
 const setDefault = async (m: StudioModel) => {
   try {
     await updateModel(m.id, { is_default: true })
-    ElMessage.success(`已将「${m.name}」设为${categoryText(m.category)}默认`)
+    ElMessage.success(t('studio.models.message.setDefault', { name: m.name, category: categoryText(m.category) }))
     load()
   } catch {
-    ElMessage.error('设置默认失败')
+    ElMessage.error(t('studio.models.message.setDefaultFailed'))
   }
 }
 
 const remove = (m: StudioModel) => {
-  ElMessageBox.confirm(`确认删除模型「${m.name}」？该操作不可恢复。`, '删除确认', { type: 'warning' })
+  ElMessageBox.confirm(t('studio.models.message.deleteConfirm', { name: m.name }), t('studio.models.message.deleteTitle'), {
+    type: 'warning',
+    confirmButtonText: t('studio.common.actions.confirm'),
+    cancelButtonText: t('studio.common.actions.cancel')
+  })
     .then(async () => {
       await deleteModel(m.id)
-      ElMessage.success('已删除')
+      ElMessage.success(t('studio.models.message.deleted'))
       load()
     })
     .catch(() => undefined)
@@ -327,7 +342,7 @@ const buildTranslateMeta = (
     try {
       meta = JSON.parse(extraJson)
     } catch {
-      ElMessage.warning('备注不是合法 JSON，已忽略')
+      ElMessage.warning(t('studio.models.message.remarkInvalid'))
     }
   }
   if (form.base_url.trim()) meta.base_url = form.base_url.trim()
@@ -339,13 +354,13 @@ const buildTranslateMeta = (
 
 const submitAdd = async () => {
   if (!addForm.name.trim()) {
-    ElMessage.warning('请输入模型名称')
+    ElMessage.warning(t('studio.models.message.nameRequired'))
     return
   }
   // 翻译模型前端先校验必填项，与后端 add_model 校验对齐
   if (addForm.category === 'translate') {
     if (!addForm.base_url.trim() || !addForm.model_id.trim()) {
-      ElMessage.warning('翻译模型需要填写接口地址和模型 ID')
+      ElMessage.warning(t('studio.models.message.translateRequired'))
       return
     }
   }
@@ -358,16 +373,16 @@ const submitAdd = async () => {
       try {
         meta = JSON.parse(addForm.meta)
       } catch {
-        ElMessage.warning('附加信息不是合法 JSON，已忽略')
+        ElMessage.warning(t('studio.models.message.metaInvalid'))
       }
     }
     await addModel({ category: addForm.category, name: addForm.name.trim(), meta })
-    ElMessage.success('新增成功')
+    ElMessage.success(t('studio.models.message.addSuccess'))
     addVisible.value = false
     activeTab.value = addForm.category
     load()
   } catch {
-    ElMessage.error('新增失败（可能与已有模型重名或缺少翻译配置）')
+    ElMessage.error(t('studio.models.message.addFailed'))
   } finally {
     adding.value = false
   }
@@ -399,7 +414,7 @@ const openEdit = (m: StudioModel) => {
 
 const submitEdit = async () => {
   if (!editForm.name.trim()) {
-    ElMessage.warning('请输入模型名称')
+    ElMessage.warning(t('studio.models.message.nameRequired'))
     return
   }
   editing.value = true
@@ -407,7 +422,7 @@ const submitEdit = async () => {
     let meta: Record<string, any>
     if (editForm.category === 'translate') {
       if (!editForm.base_url.trim() || !editForm.model_id.trim()) {
-        ElMessage.warning('翻译模型需要填写接口地址和模型 ID')
+        ElMessage.warning(t('studio.models.message.translateRequired'))
         editing.value = false
         return
       }
@@ -418,18 +433,18 @@ const submitEdit = async () => {
         try {
           meta = JSON.parse(editForm.meta)
         } catch {
-          ElMessage.warning('附加信息不是合法 JSON，已保持原值')
+          ElMessage.warning(t('studio.models.message.metaInvalidKeep'))
           editing.value = false
           return
         }
       }
     }
     await updateModel(editForm.id, { name: editForm.name.trim(), meta })
-    ElMessage.success('已保存')
+    ElMessage.success(t('studio.models.message.saveSuccess'))
     editVisible.value = false
     load()
   } catch {
-    ElMessage.error('保存失败')
+    ElMessage.error(t('studio.models.message.saveFailed'))
   } finally {
     editing.value = false
   }
@@ -439,10 +454,10 @@ const syncCheckpoints = async () => {
   syncing.value = true
   try {
     await syncCheckpointsApi()
-    ElMessage.success('已触发底模同步')
+    ElMessage.success(t('studio.models.message.syncSuccess'))
     load()
   } catch {
-    ElMessage.error('同步失败（ComfyUI 不可达？）')
+    ElMessage.error(t('studio.models.message.syncFailed'))
   } finally {
     syncing.value = false
   }

@@ -3,8 +3,8 @@
   <div class="studio-page">
     <div class="studio-header">
       <div>
-        <h1>抠图工具箱</h1>
-        <p class="desc">本地推理去背景 · 输出透明底 PNG · 模型来自「模型中心」</p>
+        <h1>{{ $t('studio.matting.title') }}</h1>
+        <p class="desc">{{ $t('studio.matting.desc') }}</p>
       </div>
     </div>
 
@@ -12,15 +12,15 @@
       <!-- 左：源图与提交 -->
       <div class="mat-side">
         <div class="studio-card">
-          <div class="card-title">抠图模型</div>
+          <div class="card-title">{{ $t('studio.matting.modelTitle') }}</div>
           <ElSelect v-model="model" style="width: 100%">
-            <ElOption label="u2net（轻量 · CPU 友好 · 推荐）" value="u2net" />
-            <ElOption label="u2netp（极速 · 低配设备）" value="u2netp" />
-            <ElOption label="bria-rmbg（效果好 · 需 GPU/强 CPU）" value="bria-rmbg" />
-            <ElOption label="birefnet-general（高精度发丝边缘 · 需强算力）" value="birefnet-general" />
+            <ElOption :label="$t('studio.matting.option.u2net')" value="u2net" />
+            <ElOption :label="$t('studio.matting.option.u2netp')" value="u2netp" />
+            <ElOption :label="$t('studio.matting.option.bria')" value="bria-rmbg" />
+            <ElOption :label="$t('studio.matting.option.birefnet')" value="birefnet-general" />
           </ElSelect>
 
-          <div class="card-title" style="margin-top: 16px">上传图片</div>
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.matting.upload.title') }}</div>
           <ElUpload
             drag
             :auto-upload="false"
@@ -30,17 +30,17 @@
           >
             <div class="upload-inner">
               <div class="upload-icon">📁</div>
-              <div class="upload-text">拖拽文件到此处，或 <em>点击选择</em></div>
-              <div class="upload-sub">支持 PNG / JPG / WebP</div>
+              <div class="upload-text">{{ $t('studio.matting.upload.text') }} <em>{{ $t('studio.matting.upload.click') }}</em></div>
+              <div class="upload-sub">{{ $t('studio.matting.upload.formats') }}</div>
             </div>
           </ElUpload>
 
           <div v-if="sourcePreview" class="source-preview">
             <span class="source-name">{{ sourceName }}</span>
-            <img :src="sourcePreview" alt="源图预览" />
+            <img :src="sourcePreview" :alt="$t('studio.matting.sourcePreviewAlt')" />
           </div>
 
-          <div class="card-title" style="margin-top: 16px">或选择已有资产</div>
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.matting.pickExisting') }}</div>
           <div v-if="pickAssets.length" class="asset-pick">
             <div
               v-for="asset in pickAssets"
@@ -53,7 +53,7 @@
               <span class="pick-label">#{{ asset.id }}</span>
             </div>
           </div>
-          <div v-else class="studio-empty"><span>资产库暂无可用图片</span></div>
+          <div v-else class="studio-empty"><span>{{ $t('studio.matting.emptyAssets') }}</span></div>
 
           <ElButton
             type="primary"
@@ -62,7 +62,7 @@
             :disabled="!canSubmit"
             @click="submit"
           >
-            ✂️ 提交抠图任务
+            {{ $t('studio.matting.submitBtn') }}
           </ElButton>
         </div>
       </div>
@@ -70,8 +70,8 @@
       <!-- 右：前后对比 -->
       <div class="studio-card mat-main">
         <div class="card-title">
-          处理前后对比
-          <span class="result-meta">拖动滑块查看抠图效果</span>
+          {{ $t('studio.matting.compare.title') }}
+          <span class="result-meta">{{ $t('studio.matting.compare.hint') }}</span>
         </div>
 
         <div v-if="submitting || polling" class="mat-waiting">
@@ -79,23 +79,23 @@
             :percent="waitPercent"
             :elapsed-sec="waitElapsed"
             :phase-text="waitPhase"
-            hint="低配设备 / 大图推理可能需要几分钟，可放心等待"
+            :hint="$t('studio.matting.wait.hint')"
           />
         </div>
 
         <template v-else-if="sourceUrl && resultAsset">
           <CompareSlider :before="sourceUrl" :after="resultAsset.url" />
           <div class="compare-meta">
-            <span>◀ 原图</span>
-            <span>抠图结果（资产 #{{ resultAsset.id }}）▶</span>
+            <span>{{ $t('studio.matting.compare.before') }}</span>
+            <span>{{ $t('studio.matting.compare.after', { n: resultAsset.id }) }}</span>
           </div>
           <div class="compare-actions">
-            <ElButton type="primary" tag="a" :href="resultAsset.url" target="_blank">⬇ 下载结果</ElButton>
-            <ElButton @click="reset">再来一张</ElButton>
+            <ElButton type="primary" tag="a" :href="resultAsset.url" target="_blank">{{ $t('studio.matting.downloadResult') }}</ElButton>
+            <ElButton @click="reset">{{ $t('studio.matting.again') }}</ElButton>
           </div>
         </template>
 
-        <div v-else class="studio-empty"><span>上传图片或选择资产后提交，抠图结果将展示在这里</span></div>
+        <div v-else class="studio-empty"><span>{{ $t('studio.matting.emptyResult') }}</span></div>
       </div>
     </div>
   </div>
@@ -104,6 +104,7 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, UploadFile } from 'element-plus'
 import {
   getAsset,
@@ -149,6 +150,7 @@ const CompareSlider = defineComponent({
 })
 
 const route = useRoute()
+const { t } = useI18n()
 
 const model = ref('u2net')
 const pickAssets = ref<StudioAsset[]>([])
@@ -162,7 +164,7 @@ const polling = ref(false)
 /** 等待进度状态：目标百分比 / 已等待秒数 / 阶段文案 */
 const waitPercent = ref(4)
 const waitElapsed = ref(0)
-const waitPhase = ref('正在提交…')
+const waitPhase = ref(t('studio.matting.phase.submitting'))
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
 let previewUrl: string | null = null
@@ -170,7 +172,9 @@ let previewUrl: string | null = null
 /** 展示用源图：上传预览优先，其次所选资产 */
 const sourcePreview = computed(() => uploadPreview.value || sourceAsset.value?.url || '')
 const sourceUrl = computed(() => (uploadFile.value ? uploadPreview.value : sourceAsset.value?.url || ''))
-const sourceName = computed(() => uploadFile.value?.name || (sourceAsset.value ? `资产 #${sourceAsset.value.id}` : ''))
+const sourceName = computed(() =>
+  uploadFile.value?.name || (sourceAsset.value ? t('studio.matting.assetLabel', { n: sourceAsset.value.id }) : '')
+)
 const canSubmit = computed(() => Boolean(uploadFile.value || selectedAssetId.value))
 
 /** 从生图页跳转过来时预选资产 */
@@ -232,7 +236,7 @@ const submit = async () => {
   resultAsset.value = null
   waitPercent.value = 4
   waitElapsed.value = 0
-  waitPhase.value = '正在提交…'
+  waitPhase.value = t('studio.matting.phase.submitting')
   try {
     let task: StudioTask
     if (uploadFile.value) {
@@ -244,7 +248,7 @@ const submit = async () => {
     }
     await poll(task.id)
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '提交抠图任务失败')
+    ElMessage.error(error instanceof Error ? error.message : t('studio.matting.message.submitFailed'))
   } finally {
     submitting.value = false
   }
@@ -253,18 +257,18 @@ const submit = async () => {
 /** 轮询任务直至 done，取第一个产物资产做对比（低配 CPU 推理可达数分钟，上限 10 分钟） */
 const poll = async (taskId: number) => {
   polling.value = true
-  waitPhase.value = '排队等待推理…'
+  waitPhase.value = t('studio.matting.phase.queued')
   waitPercent.value = 12
   try {
     const task = await pollTask(taskId, {
       timeoutMs: 600000,
-      onUpdate: (t, elapsedSec) => {
+      onUpdate: (task, elapsedSec) => {
         waitElapsed.value = elapsedSec
-        if (t.status === 'queued') {
-          waitPhase.value = '排队等待推理…'
+        if (task.status === 'queued') {
+          waitPhase.value = t('studio.matting.phase.queued')
           waitPercent.value = Math.max(waitPercent.value, 12)
         } else {
-          waitPhase.value = 'AI 推理中，请稍候…'
+          waitPhase.value = t('studio.matting.phase.running')
           // 缓慢爬升到 95%，真实完成由 done 状态决定
           waitPercent.value = Math.min(95, Math.max(waitPercent.value, 20 + elapsedSec * 1.2))
         }
@@ -272,15 +276,15 @@ const poll = async (taskId: number) => {
     })
     const ids = taskAssetIds(task)
     if (!ids.length) {
-      ElMessage.warning('任务完成但未产出资产')
+      ElMessage.warning(t('studio.matting.message.noAsset'))
       return
     }
-    waitPhase.value = '加载结果…'
+    waitPhase.value = t('studio.matting.phase.loading')
     const res = await getAsset(ids[0])
     resultAsset.value = res.data
-    ElMessage.success(`抠图完成（耗时 ${waitElapsed.value}s）`)
+    ElMessage.success(t('studio.matting.message.done', { n: waitElapsed.value }))
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : '抠图任务失败')
+    ElMessage.error(error instanceof Error ? error.message : t('studio.matting.message.failed'))
   } finally {
     polling.value = false
   }

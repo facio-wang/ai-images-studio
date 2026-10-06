@@ -29,3 +29,6 @@ Thumbs.db
 .vscode/
 *.log
 logs/
+
+# 安全扫描工具缓存（Mimosa）
+.mimosa/

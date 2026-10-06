@@ -17,8 +17,8 @@
       </div>
       <div class="login-wrap">
         <div class="form">
-          <h3 class="title">登录工作台</h3>
-          <p class="sub-title">请输入访问令牌（Token）以进入创作中台 · 仅限局域网授权用户</p>
+          <h3 class="title">{{ $t('studio.login.title') }}</h3>
+          <p class="sub-title">{{ $t('studio.login.subTitle') }}</p>
           <ElForm
             ref="formRef"
             :model="formData"
@@ -31,7 +31,7 @@
                 v-model.trim="formData.token"
                 type="password"
                 show-password
-                placeholder="请输入访问令牌（服务端 .env 中的 STUDIO_TOKEN）"
+                :placeholder="$t('studio.login.tokenPlaceholder')"
                 radius="8px"
                 autocomplete="off"
               />
@@ -39,13 +39,13 @@
 
             <div style="margin-top: 30px">
               <ElButton class="login-btn" type="primary" @click="handleSubmit" :loading="loading" v-ripple>
-                登录工作台 →
+                {{ $t('studio.login.submit') }}
               </ElButton>
             </div>
 
             <div class="login-footer">
-              <span>Token 配置于服务端 .env 的 STUDIO_TOKEN</span>
-              <span>本地会话 · 令牌仅存于浏览器 localStorage</span>
+              <span>{{ $t('studio.login.footerToken') }}</span>
+              <span>{{ $t('studio.login.footerLocal') }}</span>
             </div>
           </ElForm>
         </div>
@@ -55,6 +55,7 @@
 </template>
 
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useUserStore } from '@/store/modules/user'
 import { HOME_PAGE } from '@/router/routesAlias'
@@ -62,6 +63,8 @@ import type { FormInstance, FormRules } from 'element-plus'
 import { verifyToken } from '@/api/studio'
 
 defineOptions({ name: 'Login' })
+
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const userStore = useUserStore()
@@ -71,7 +74,7 @@ const loading = ref(false)
 const formData = reactive({ token: '' })
 
 const rules = computed<FormRules>(() => ({
-  token: [{ required: true, message: '请输入访问令牌', trigger: 'blur' }]
+  token: [{ required: true, message: t('studio.login.tokenRequired'), trigger: 'blur' }]
 }))
 
 /** 提交：校验 token（调受保护接口 200 即有效）→ 写入 store → 进工作台 */
@@ -83,7 +86,7 @@ const handleSubmit = async () => {
     try {
       const ok = await verifyToken(formData.token)
       if (!ok) {
-        ElMessage.error('令牌无效或服务不可达，请检查后重试')
+        ElMessage.error(t('studio.login.tokenInvalid'))
         return
       }
       // 写入 token 并标记登录态；角色固定（单用户）
@@ -103,8 +106,8 @@ const showLoginSuccessNotice = () => {
   setTimeout(() => {
     ElNotification({
       type: 'success',
-      title: '登录成功',
-      message: '欢迎回到 AI Images Studio!',
+      title: t('studio.login.successTitle'),
+      message: t('studio.login.successMessage'),
       zIndex: 10000
     })
   }, 150)

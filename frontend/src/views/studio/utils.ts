@@ -3,6 +3,7 @@
  * 提供轮询 hook、资产/任务类型元信息、缩略图地址处理等公共能力
  */
 import { ref, onUnmounted } from 'vue'
+import { $t } from '@/locales'
 import {
   getAsset,
   listAssets,
@@ -12,7 +13,7 @@ import {
   StudioTask
 } from '@/api/studio'
 
-/** 任务状态 → 中文文案 */
+/** 任务状态 → 中文文案（遗留：新代码请用 TASK_STATUS_KEY + $t） */
 export const TASK_STATUS_TEXT: Record<string, string> = {
   queued: '排队中',
   running: '运行中',
@@ -20,11 +21,26 @@ export const TASK_STATUS_TEXT: Record<string, string> = {
   failed: '失败'
 }
 
-/** 任务/资产类型 → 中文文案 */
+/** 任务/资产类型 → 中文文案（遗留：新代码请用 TASK_TYPE_KEY + $t） */
 export const TASK_TYPE_TEXT: Record<string, string> = {
   generate: '生图',
   matting: '抠图',
   upload: '上传'
+}
+
+/** 任务状态 → i18n key（studio.common.taskStatus.*） */
+export const TASK_STATUS_KEY: Record<string, string> = {
+  queued: 'studio.common.taskStatus.queued',
+  running: 'studio.common.taskStatus.running',
+  done: 'studio.common.taskStatus.done',
+  failed: 'studio.common.taskStatus.failed'
+}
+
+/** 任务/资产类型 → i18n key（studio.common.taskType.*） */
+export const TASK_TYPE_KEY: Record<string, string> = {
+  generate: 'studio.common.taskType.generate',
+  matting: 'studio.common.taskType.matting',
+  upload: 'studio.common.taskType.upload'
 }
 
 /** 任务状态 → Element Plus tag 类型 */
@@ -76,7 +92,7 @@ export function useTaskPolling() {
       }
       if (polling.value) onDone(assets, task)
     } catch (error) {
-      onError?.(error instanceof Error ? error.message : '任务执行失败')
+      onError?.(error instanceof Error ? error.message : $t('studio.common.taskFailedMsg'))
     } finally {
       stop()
     }

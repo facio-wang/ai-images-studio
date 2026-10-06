@@ -1,6 +1,6 @@
 <!-- 生成详情弹窗（移植自 webUI-v1.0 生成参数折叠条）：完整提示词 / 模型 / 采样参数 / 产物图 -->
 <template>
-  <ElDialog v-model="visible" title="生成详情" width="560px" destroy-on-close>
+  <ElDialog v-model="visible" :title="$t('studio.detail.title')" width="560px" destroy-on-close>
     <template v-if="detail">
       <!-- 产物预览 -->
       <div v-if="assetUrls.length" class="detail-preview" :class="{ checker: assetType === 'matting' }">
@@ -10,63 +10,63 @@
       <ElAlert
         v-if="detail.error"
         type="error"
-        :title="`失败原因：${briefError}`"
+        :title="$t('studio.detail.failReason', { reason: briefError })"
         :closable="false"
         style="margin-bottom: 12px"
       />
 
       <div class="kv-list">
         <div class="kv">
-          <span class="k">提示词</span>
+          <span class="k">{{ $t('studio.detail.prompt') }}</span>
           <span class="v pre">{{ genParams.prompt || (props.asset as any)?.labels || '—' }}</span>
         </div>
         <div v-if="enhancedPrompt && enhancedPrompt !== genParams.prompt" class="kv">
-          <span class="k">实际发送提示词</span>
+          <span class="k">{{ $t('studio.detail.actualPrompt') }}</span>
           <span class="v pre">{{ enhancedPrompt }}</span>
         </div>
         <div v-if="negative" class="kv">
-          <span class="k">反向提示词</span>
+          <span class="k">{{ $t('studio.detail.negative') }}</span>
           <span class="v pre">{{ negative }}</span>
         </div>
         <div v-if="modelText" class="kv">
-          <span class="k">生图模型</span>
+          <span class="k">{{ $t('studio.detail.model') }}</span>
           <span class="v">{{ modelText }}</span>
         </div>
         <div v-if="genParams.width" class="kv">
-          <span class="k">尺寸</span>
-          <span class="v">{{ genParams.width }} × {{ genParams.height }} · {{ genParams.count || 1 }} 张</span>
+          <span class="k">{{ $t('studio.detail.size') }}</span>
+          <span class="v">{{ $t('studio.detail.sizeValue', { w: genParams.width, h: genParams.height, n: genParams.count || 1 }) }}</span>
         </div>
         <div v-if="genParams.steps" class="kv">
-          <span class="k">采样</span>
-          <span class="v">{{ genParams.steps }} 步 · CFG {{ genParams.cfg }}</span>
+          <span class="k">{{ $t('studio.detail.sampling') }}</span>
+          <span class="v">{{ $t('studio.detail.samplingValue', { steps: genParams.steps, cfg: genParams.cfg }) }}</span>
         </div>
         <div v-if="seedText" class="kv">
           <span class="k">Seed</span>
           <span class="v accent">{{ seedText }}</span>
         </div>
         <div v-if="detail.type" class="kv">
-          <span class="k">任务类型</span>
-          <span class="v">{{ TASK_TYPE_TEXT[detail.type] || detail.type }}</span>
+          <span class="k">{{ $t('studio.detail.taskType') }}</span>
+          <span class="v">{{ TASK_TYPE_KEY[detail.type] ? $t(TASK_TYPE_KEY[detail.type]) : detail.type }}</span>
         </div>
         <div v-if="detail.created_at" class="kv">
-          <span class="k">创建时间</span>
+          <span class="k">{{ $t('studio.detail.createdAt') }}</span>
           <span class="v">{{ formatTime(detail.created_at) }}</span>
         </div>
         <div v-if="assetIdText" class="kv">
-          <span class="k">产物资产</span>
+          <span class="k">{{ $t('studio.detail.outputAssets') }}</span>
           <span class="v">{{ assetIdText }}</span>
         </div>
       </div>
 
       <div class="detail-ops">
-        <ElButton v-if="assetUrls.length" tag="a" :href="assetUrls[0]" target="_blank">⬇ 查看原图</ElButton>
+        <ElButton v-if="assetUrls.length" tag="a" :href="assetUrls[0]" target="_blank">{{ $t('studio.detail.viewOriginal') }}</ElButton>
         <ElButton
           v-if="detail.status === 'failed' || detail.error"
           type="warning"
           plain
           @click="$emit('retry')"
         >
-          ⟳ 重试任务
+          {{ $t('studio.detail.retryTask') }}
         </ElButton>
       </div>
     </template>
@@ -75,11 +75,14 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { StudioAsset, StudioTask } from '@/api/studio'
-import { TASK_TYPE_TEXT } from '../utils'
+import { TASK_TYPE_KEY } from '../utils'
 
 const props = defineProps<{ asset?: StudioAsset | null; task?: StudioTask | null }>()
 defineEmits<{ (e: 'retry'): void }>()
+
+const { t } = useI18n()
 
 const visible = defineModel<boolean>({ default: false })
 
@@ -120,7 +123,7 @@ const modelText = computed(() => {
   const model = genResult.value.model ?? genParams.value.checkpoint
   if (!model) return ''
   const type = genResult.value.model_type
-  return type === 'z_image' ? `${model}（Z-Image 原生中文）` : String(model)
+  return type === 'z_image' ? t('studio.detail.zImageSuffix', { model: String(model) }) : String(model)
 })
 const seedText = computed(() => {
   const s = genParams.value.seed
@@ -135,7 +138,7 @@ const assetUrls = computed<string[]>(() => {
 
 const assetIdText = computed(() => {
   const ids = genResult.value.asset_ids
-  return Array.isArray(ids) && ids.length ? ids.map((id) => `#${id}`).join('、') : ''
+  return Array.isArray(ids) && ids.length ? ids.map((id) => `#${id}`).join(t('studio.detail.assetIdSep')) : ''
 })
 
 const briefError = computed(() =>

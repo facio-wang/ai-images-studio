@@ -3,33 +3,33 @@
   <div class="studio-page home-page">
     <div class="studio-header">
       <div>
-        <h1>工作台</h1>
-        <p class="desc">本地 AI 创作中台 · 今天已提交 {{ todayTasks }} 个任务</p>
+        <h1>{{ $t('studio.home.title') }}</h1>
+        <p class="desc">{{ $t('studio.home.desc', { n: todayTasks }) }}</p>
       </div>
       <div class="header-actions">
-        <ElButton @click="openGuide">📖 重新查看引导</ElButton>
-        <ElButton @click="$router.push('/manage/help')">帮助中心</ElButton>
-        <ElButton @click="$router.push('/manage/tasks')">📋 任务中心</ElButton>
-        <ElButton type="primary" @click="$router.push('/creation/generate')">🎨 开始生图</ElButton>
+        <ElButton @click="openGuide">{{ $t('studio.home.replayGuide') }}</ElButton>
+        <ElButton @click="$router.push('/manage/help')">{{ $t('studio.home.helpCenter') }}</ElButton>
+        <ElButton @click="$router.push('/manage/tasks')">{{ $t('studio.home.taskCenter') }}</ElButton>
+        <ElButton type="primary" @click="$router.push('/creation/generate')">{{ $t('studio.home.startGenerate') }}</ElButton>
       </div>
     </div>
 
     <!-- 统计卡 -->
     <div class="stat-grid">
       <div class="studio-card stat-card gradient">
-        <div class="stat-label">今日任务数</div>
+        <div class="stat-label">{{ $t('studio.home.stat.todayTasks') }}</div>
         <div class="stat-num">{{ todayTasks }}</div>
-        <div class="stat-sub">含生图与抠图任务</div>
+        <div class="stat-sub">{{ $t('studio.home.stat.todayTasksSub') }}</div>
       </div>
       <div class="studio-card stat-card">
-        <div class="stat-label">资产总数</div>
+        <div class="stat-label">{{ $t('studio.home.stat.assetTotal') }}</div>
         <div class="stat-num cyan">{{ assetTotal }}</div>
-        <div class="stat-sub">生图 {{ typeCount('generate') }} · 抠图 {{ typeCount('matting') }} · 上传 {{ typeCount('upload') }}</div>
+        <div class="stat-sub">{{ $t(TASK_TYPE_KEY['generate']) }} {{ typeCount('generate') }} · {{ $t(TASK_TYPE_KEY['matting']) }} {{ typeCount('matting') }} · {{ $t(TASK_TYPE_KEY['upload']) }} {{ typeCount('upload') }}</div>
       </div>
       <div class="studio-card stat-card">
-        <div class="stat-label">排队 / 运行中</div>
+        <div class="stat-label">{{ $t('studio.home.stat.activeTasks') }}</div>
         <div class="stat-num purple">{{ activeTasks }}</div>
-        <div class="stat-sub">进行中任务完成后自动入资产库</div>
+        <div class="stat-sub">{{ $t('studio.home.stat.activeTasksSub') }}</div>
       </div>
     </div>
 
@@ -38,16 +38,16 @@
       <div class="svc-status" :class="sysStatus?.comfyui.status">
         <span class="svc-dot"></span>
         <span class="svc-text">
-          生图服务（ComfyUI）
-          {{ running ? '运行中' : '未启动' }}
+          {{ $t('studio.common.service.fullName') }}
+          {{ running ? $t('studio.common.service.running') : $t('studio.common.service.stopped') }}
         </span>
         <span v-if="running" class="svc-meta">
-          v{{ sysStatus?.comfyui.version || '?' }} · 队列 {{ sysStatus?.comfyui.queue_running }}/{{ sysStatus?.comfyui.queue_pending }}
+          v{{ sysStatus?.comfyui.version || '?' }} · {{ $t('studio.common.service.queue') }} {{ sysStatus?.comfyui.queue_running }}/{{ sysStatus?.comfyui.queue_pending }}
         </span>
         <template v-else>
-          <span class="svc-meta warn">生图/对话生图功能暂不可用，请在 Win11 宿主机启动 ComfyUI（端口 8188）</span>
+          <span class="svc-meta warn">{{ $t('studio.common.service.manualHint') }}</span>
           <ElButton size="small" type="primary" plain :loading="starting" @click="startService">
-            {{ starting ? `启动中 ${startElapsed}s…` : '⚡ 一键启动' }}
+            {{ starting ? $t('studio.common.service.startingBtn', { n: startElapsed }) : $t('studio.common.service.startBtn') }}
           </ElButton>
         </template>
       </div>
@@ -58,7 +58,7 @@
           class="res-item"
           :title="`${d.name || ''} · ${d.torch_version || ''}`"
         >
-          <span class="res-lab">GPU 显存</span>
+          <span class="res-lab">{{ $t('studio.home.vramLabel') }}</span>
           <div class="meter">
             <i :style="{ width: meterPct(d.vram_total_mb ? 1 - (d.vram_free_mb ?? d.vram_total_mb) / d.vram_total_mb : 0) }"></i>
           </div>
@@ -67,7 +67,7 @@
           </span>
         </div>
         <div v-if="sysStatus?.comfyui.ram_total_mb" class="res-item">
-          <span class="res-lab">系统内存</span>
+          <span class="res-lab">{{ $t('studio.home.ramLabel') }}</span>
           <div class="meter"><i :style="{ width: meterPct(1 - (sysStatus.comfyui.ram_free_mb ?? 0) / sysStatus.comfyui.ram_total_mb) }"></i></div>
           <span class="res-val">
             {{ fmtMB(sysStatus.comfyui.ram_total_mb - (sysStatus.comfyui.ram_free_mb ?? 0)) }} / {{ fmtMB(sysStatus.comfyui.ram_total_mb) }}
@@ -80,8 +80,8 @@
       <!-- 最近资产 -->
       <div class="studio-card">
         <div class="card-title recent-head">
-          最近作品
-          <ElButton link type="primary" @click="$router.push('/manage/assets')">进入资产库 →</ElButton>
+          {{ $t('studio.home.recentTitle') }}
+          <ElButton link type="primary" @click="$router.push('/manage/assets')">{{ $t('studio.home.goAssets') }}</ElButton>
         </div>
         <div v-if="recentAssets.length" class="recent-grid">
           <div
@@ -101,32 +101,32 @@
             />
           </div>
         </div>
-        <div v-else class="studio-empty"><span>还没有作品，从生图或对话工作台开始吧</span></div>
+        <div v-else class="studio-empty"><span>{{ $t('studio.home.emptyRecent') }}</span></div>
       </div>
 
       <!-- 快捷入口 -->
       <div class="studio-card">
-        <div class="card-title">快捷入口</div>
+        <div class="card-title">{{ $t('studio.home.quickLinks') }}</div>
         <div class="entry-grid">
           <div class="entry-card" @click="$router.push('/creation/chat')">
             <div class="entry-icon">💬</div>
-            <div class="entry-name">对话工作台</div>
-            <div class="entry-sub">一句话完成处理</div>
+            <div class="entry-name">{{ $t('studio.home.entry.chat.name') }}</div>
+            <div class="entry-sub">{{ $t('studio.home.entry.chat.sub') }}</div>
           </div>
           <div class="entry-card" @click="$router.push('/creation/generate')">
             <div class="entry-icon">🎨</div>
-            <div class="entry-name">新建生图</div>
-            <div class="entry-sub">ComfyUI 文生图</div>
+            <div class="entry-name">{{ $t('studio.home.entry.generate.name') }}</div>
+            <div class="entry-sub">{{ $t('studio.home.entry.generate.sub') }}</div>
           </div>
           <div class="entry-card" @click="$router.push('/creation/matting')">
             <div class="entry-icon">✂️</div>
-            <div class="entry-name">抠图工具箱</div>
+            <div class="entry-name">{{ $t('studio.home.entry.matting.name') }}</div>
             <div class="entry-sub">u2net / bria-rmbg</div>
           </div>
           <div class="entry-card" @click="$router.push('/manage/models')">
             <div class="entry-icon">🧠</div>
-            <div class="entry-name">模型中心</div>
-            <div class="entry-sub">底模 / LoRA / 翻译</div>
+            <div class="entry-name">{{ $t('studio.home.entry.models.name') }}</div>
+            <div class="entry-sub">{{ $t('studio.home.entry.models.sub') }}</div>
           </div>
         </div>
       </div>
@@ -143,6 +143,7 @@ import { storeToRefs } from 'pinia'
 import { listAssets, listTasks, StudioAsset, StudioTask } from '@/api/studio'
 import { useSystemStatusStore } from '@/store/modules/systemStatus'
 import OnboardingGuide from './components/OnboardingGuide.vue'
+import { TASK_TYPE_KEY } from './utils'
 import './style.scss'
 
 defineOptions({ name: 'StudioHome' })

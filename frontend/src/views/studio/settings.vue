@@ -3,45 +3,45 @@
   <div class="studio-page">
     <div class="studio-header">
       <div>
-        <h1>系统设置</h1>
-        <p class="desc">只读展示运行时信息 · 配置均来自服务端 .env（STUDIO_TOKEN / COMFYUI_URL 等）</p>
+        <h1>{{ $t('studio.settings.title') }}</h1>
+        <p class="desc">{{ $t('studio.settings.desc') }}</p>
       </div>
-      <ElButton @click="load">⟳ 刷新</ElButton>
+      <ElButton @click="load">{{ $t('studio.settings.refresh') }}</ElButton>
     </div>
 
     <div class="settings-layout">
       <!-- 运行信息 -->
       <div class="studio-card">
-        <div class="card-title">运行信息</div>
+        <div class="card-title">{{ $t('studio.settings.runInfo') }}</div>
         <ElDescriptions :column="1" border>
-          <ElDescriptionsItem label="应用">{{ meta?.name ?? '—' }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="版本">{{ meta?.version ?? '—' }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="服务地址">{{ host }}</ElDescriptionsItem>
-          <ElDescriptionsItem label="鉴权方式">Bearer Token（.env STUDIO_TOKEN，登录页输入）</ElDescriptionsItem>
-          <ElDescriptionsItem label="数据目录">/app/data（docker volume 持久化）</ElDescriptionsItem>
-          <ElDescriptionsItem label="生图引擎">ComfyUI（端点由 .env COMFYUI_URL 配置，默认 :8188）</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.app')">{{ meta?.name ?? '—' }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.version')">{{ meta?.version ?? '—' }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.serviceUrl')">{{ host }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.authMode')">{{ $t('studio.settings.authModeValue') }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.dataDir')">{{ $t('studio.settings.dataDirValue') }}</ElDescriptionsItem>
+          <ElDescriptionsItem :label="$t('studio.settings.engine')">{{ $t('studio.settings.engineValue') }}</ElDescriptionsItem>
         </ElDescriptions>
 
         <div class="tip-block">
-          🔒 所有密钥仅保存在服务端 .env，前端不提供任何 key 的查看或编辑入口。
+          {{ $t('studio.settings.secretTip') }}
         </div>
       </div>
 
       <!-- 关于 -->
       <div class="studio-card">
-        <div class="card-title">关于</div>
+        <div class="card-title">{{ $t('studio.settings.about') }}</div>
         <div class="about-logo">AI</div>
         <h2 class="about-name">AI Images Studio</h2>
-        <p class="about-desc">本地 AI 创作中台 · 对话生图 / 抠图 / 模型与资产管理</p>
+        <p class="about-desc">{{ $t('studio.settings.aboutDesc') }}</p>
 
         <ElDivider />
 
         <ul class="about-list">
-          <li><b>版本</b>v0.1（P1）</li>
-          <li><b>许可</b>GPL-3.0</li>
-          <li><b>部署</b>docker compose up -d（端口 8191）</li>
-          <li><b>后端</b>FastAPI + SQLite + ComfyUI</li>
-          <li><b>前端</b>Vue3 + TS + Element Plus</li>
+          <li><b>{{ $t('studio.settings.versionLabel') }}</b>v0.1（P1）</li>
+          <li><b>{{ $t('studio.settings.license') }}</b>GPL-3.0</li>
+          <li><b>{{ $t('studio.settings.deploy') }}</b>{{ $t('studio.settings.deployValue') }}</li>
+          <li><b>{{ $t('studio.settings.backend') }}</b>FastAPI + SQLite + ComfyUI</li>
+          <li><b>{{ $t('studio.settings.frontend') }}</b>Vue3 + TS + Element Plus</li>
         </ul>
       </div>
     </div>

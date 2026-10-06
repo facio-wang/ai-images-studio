@@ -58,6 +58,22 @@ async def start_comfyui():
     return ok(await system_service.start_comfyui())
 
 
+# ---------- art-design-pro 模板遗留接口兼容（/admin/*） ----------
+# 前端框架内置调用：App.vue 进入时拉用户信息、顶栏退出登录。项目是单用户 Token 部署，
+# 身份与登录页写死的本地身份保持一致；不实现则每次进入/退出都弹 "Not Found" 报错。
+
+@router.get("/admin/admin/info")
+async def admin_info():
+    """模板框架的用户信息接口：单用户部署，返回固定本地身份"""
+    return ok({"userId": 1, "username": "Studio User", "roles": ["admin"], "buttons": []})
+
+
+@router.post("/admin/login/logout")
+async def admin_logout():
+    """模板框架的退出登录接口：登录态由前端 localStorage 管理，后端无会话可销毁"""
+    return ok()
+
+
 # ---------- 任务中心 ----------
 
 @router.get("/api/tasks")
@@ -277,6 +293,13 @@ async def list_sessions(db=Depends(get_db)):
 @router.get("/api/chat/messages")
 async def get_messages(session_id: int, db=Depends(get_db)):
     return ok(await chat_service.get_messages(db, session_id))
+
+
+@router.delete("/api/chat/sessions/{session_id}")
+async def delete_session(session_id: int, db=Depends(get_db)):
+    """删除会话及其消息记录；图片资产保留在资产库，需到资产管理中删除"""
+    removed = await chat_service.delete_session(db, session_id)
+    return ok({"deleted": removed}) if removed else fail(CODE_NOT_FOUND, f"会话不存在: {session_id}")
 
 
 @router.post("/api/chat")

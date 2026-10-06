@@ -27,31 +27,31 @@ export const asyncRoutes: AppRouteRecord[] = [
     path: '/creation',
     name: 'Creation',
     component: 'Home', // 布局容器（src/views/index/index.vue）
-    meta: { title: '创作', icon: ICONS.generate },
+    meta: { title: 'menus.creation.title', icon: ICONS.generate },
     children: [
       {
         path: 'home',
         name: 'StudioHome',
         component: '/studio/home',
-        meta: { title: '工作台', icon: ICONS.home, fixedTab: true, keepAlive: true }
+        meta: { title: 'menus.studioHome.title', icon: ICONS.home, fixedTab: true, keepAlive: true }
       },
       {
         path: 'chat',
         name: 'StudioChat',
         component: '/studio/chat',
-        meta: { title: '对话工作台', icon: ICONS.chat, keepAlive: true }
+        meta: { title: 'menus.studioChat.title', icon: ICONS.chat, keepAlive: true }
       },
       {
         path: 'generate',
         name: 'StudioGenerate',
         component: '/studio/generate',
-        meta: { title: '生图', icon: ICONS.generate, keepAlive: true }
+        meta: { title: 'menus.studioGenerate.title', icon: ICONS.generate, keepAlive: true }
       },
       {
         path: 'matting',
         name: 'StudioMatting',
         component: '/studio/matting',
-        meta: { title: '抠图工具箱', icon: ICONS.matting, keepAlive: true }
+        meta: { title: 'menus.studioMatting.title', icon: ICONS.matting, keepAlive: true }
       }
     ]
   },
@@ -60,31 +60,31 @@ export const asyncRoutes: AppRouteRecord[] = [
     path: '/manage',
     name: 'Manage',
     component: 'Home',
-    meta: { title: '管理', icon: ICONS.models },
+    meta: { title: 'menus.manage.title', icon: ICONS.models },
     children: [
       {
         path: 'models',
         name: 'StudioModels',
         component: '/studio/models',
-        meta: { title: '模型中心', icon: ICONS.models, keepAlive: true }
+        meta: { title: 'menus.studioModels.title', icon: ICONS.models, keepAlive: true }
       },
       {
         path: 'assets',
         name: 'StudioAssets',
         component: '/studio/assets',
-        meta: { title: '资产库', icon: ICONS.assets, keepAlive: true }
+        meta: { title: 'menus.studioAssets.title', icon: ICONS.assets, keepAlive: true }
       },
       {
         path: 'tasks',
         name: 'StudioTasks',
         component: '/studio/tasks',
-        meta: { title: '任务中心', icon: ICONS.tasks, keepAlive: true }
+        meta: { title: 'menus.studioTasks.title', icon: ICONS.tasks, keepAlive: true }
       },
       {
         path: 'help',
         name: 'StudioHelp',
         component: '/studio/help',
-        meta: { title: '帮助中心', icon: '&#xe6b4;', keepAlive: true }
+        meta: { title: 'menus.studioHelp.title', icon: '&#xe6b4;', keepAlive: true }
       }
     ]
   },
@@ -93,13 +93,13 @@ export const asyncRoutes: AppRouteRecord[] = [
     path: '/system',
     name: 'System',
     component: 'Home',
-    meta: { title: '系统', icon: ICONS.settings },
+    meta: { title: 'menus.system.title', icon: ICONS.settings },
     children: [
       {
         path: 'settings',
         name: 'StudioSettings',
         component: '/studio/settings',
-        meta: { title: '系统设置', icon: ICONS.settings, keepAlive: true }
+        meta: { title: 'menus.studioSettings.title', icon: ICONS.settings, keepAlive: true }
       }
     ]
   }

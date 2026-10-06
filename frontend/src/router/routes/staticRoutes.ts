@@ -69,13 +69,13 @@ export const staticRoutes: AppRouteRecordRaw[] = [
     path: RoutesAlias.Personal,
     component: Home,
     name: 'PersonalLayout',
-    meta: { title: '个人中心' },
+    meta: { title: 'menus.personal.title' },
     children: [
       {
         path: '',
         name: 'Personal',
         component: () => import('@views/personal/index.vue'),
-        meta: { title: '个人中心' }
+        meta: { title: 'menus.personal.title' }
       }
     ]
   }

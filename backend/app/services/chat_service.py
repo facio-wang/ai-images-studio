@@ -158,6 +158,17 @@ async def list_sessions(db: aiosqlite.Connection) -> list[dict]:
     return await fetch_all(db, "SELECT * FROM chat_sessions ORDER BY id DESC LIMIT 50")
 
 
+async def delete_session(db: aiosqlite.Connection, session_id: int) -> bool:
+    """删除会话及其消息记录。图片资产不入库在此表，资产库内容不受影响"""
+    session = await fetch_one(db, "SELECT * FROM chat_sessions WHERE id=?", (session_id,))
+    if not session:
+        return False
+    await db.execute("DELETE FROM chat_messages WHERE session_id=?", (session_id,))
+    await db.execute("DELETE FROM chat_sessions WHERE id=?", (session_id,))
+    await db.commit()
+    return True
+
+
 async def get_messages(db: aiosqlite.Connection, session_id: int) -> list[dict]:
     return await fetch_all(
         db, "SELECT * FROM chat_messages WHERE session_id=? ORDER BY id ASC", (session_id,)

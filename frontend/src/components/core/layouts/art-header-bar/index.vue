@@ -64,6 +64,27 @@
             <i class="iconfont-sys">{{ isFullscreen ? '&#xe62d;' : '&#xe8ce;' }}</i>
           </div>
         </div>
+        <!-- 语言切换（中/英） -->
+        <div class="btn-box" v-if="showLanguage">
+          <el-dropdown @command="changeLanguage" popper-class="langDropDownStyle">
+            <div class="btn language-btn" :title="isZh ? 'English' : '切换中文'">
+              <i class="iconfont-sys">&#xe611;</i>
+            </div>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <div v-for="item in languageOptions" :key="item.value" class="lang-btn-item">
+                  <el-dropdown-item
+                    :command="item.value"
+                    :class="{ 'is-selected': locale === item.value }"
+                  >
+                    <span class="menu-txt">{{ item.label }}</span>
+                    <i v-if="locale === item.value" class="iconfont-sys">&#xe621;</i>
+                  </el-dropdown-item>
+                </div>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
         <!-- 设置 -->
         <div class="btn-box" @click="openSetting">
           <el-popover :visible="showSettingGuide" placement="bottom-start" :width="190" :offset="0">
@@ -101,12 +122,14 @@
             popper-style="border: 1px solid var(--art-border-dashed-color); border-radius: calc(var(--custom-radius) / 2 + 4px); padding: 5px 16px; 5px 16px;"
           >
             <template #reference>
-              <img class="cover" :src="userInfo.avatar" />
+              <img v-if="userInfo.avatar" class="cover" :src="userInfo.avatar" />
+              <span v-else class="cover cover-fallback">{{ avatarInitial }}</span>
             </template>
             <template #default>
               <div class="user-menu-box">
                 <div class="user-head">
-                  <img class="cover" :src="userInfo.avatar" style="float: left" />
+                  <img v-if="userInfo.avatar" class="cover" :src="userInfo.avatar" style="float: left" />
+                  <span v-else class="cover cover-fallback">{{ avatarInitial }}</span>
                   <div class="user-wrap">
                     <span class="name">{{ userInfo.username }}</span>
                     <span class="email">{{ userInfo.phone || userInfo.email }}</span>
@@ -137,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-  import { MenuTypeEnum, MenuWidth } from '@/enums/appEnum'
+  import { LanguageEnum, MenuTypeEnum, MenuWidth } from '@/enums/appEnum'
   import { useSettingStore } from '@/store/modules/setting'
   import { useUserStore } from '@/store/modules/user'
   import { useFullscreen } from '@vueuse/core'
@@ -148,6 +171,7 @@
   import { useMenuStore } from '@/store/modules/menu'
   import AppConfig from '@/config'
   import { UserService } from '@/api/usersApi'
+  import { languageOptions } from '@/locales'
 
   const settingStore = useSettingStore()
   const userStore = useUserStore()
@@ -156,6 +180,7 @@
   const {
     showMenuButton,
     showRefreshButton,
+    showLanguage,
     menuOpen,
     showCrumbs,
     systemThemeColor,
@@ -167,12 +192,22 @@
 
   const { language, getUserInfo: userInfo } = storeToRefs(userStore)
 
+  /** 无自定义头像时显示用户名首字母 */
+  const avatarInitial = computed(() => (userInfo.value.username || 'S').charAt(0).toUpperCase())
+
   const { menuList } = storeToRefs(useMenuStore())
 
   const userMenuPopover = ref()
 
   const isWindows = navigator.userAgent.includes('Windows')
   const { locale } = useI18n()
+  /** 当前是否中文界面：语言按钮 tooltip 提示切换到另一种语言 */
+  const isZh = computed(() => locale.value === LanguageEnum.ZH)
+
+  /** <html lang> 跟随界面语言（无障碍/翻译工具依赖） */
+  const syncHtmlLang = () => {
+    document.documentElement.lang = locale.value === LanguageEnum.ZH ? 'zh-CN' : 'en'
+  }
 
   const isLeftMenu = computed(() => menuType.value === MenuTypeEnum.LEFT)
   const isDualMenu = computed(() => menuType.value === MenuTypeEnum.DUAL_MENU)
@@ -259,6 +294,15 @@
 
   const initLanguage = () => {
     locale.value = language.value
+    syncHtmlLang()
+  }
+
+  const changeLanguage = (lang: LanguageEnum) => {
+    if (locale.value === lang) return
+    locale.value = lang
+    userStore.setLanguage(lang)
+    syncHtmlLang()
+    reload(50)
   }
 
   const openSetting = () => {

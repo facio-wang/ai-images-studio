@@ -10,9 +10,9 @@
   >
     <template #reference>
       <div class="svc-wrap">
-        <div class="svc-trigger" title="生图服务（ComfyUI）状态">
+        <div class="svc-trigger" :title="t('studio.common.service.triggerTip')">
           <span class="svc-dot" :class="dotClass"></span>
-          <span class="svc-trigger-text">生图服务</span>
+          <span class="svc-trigger-text">{{ t('studio.common.service.label') }}</span>
         </div>
       </div>
     </template>
@@ -21,39 +21,54 @@
       <div class="svc-head">
         <span class="svc-title">
           <span class="svc-dot" :class="dotClass"></span>
-          生图服务（ComfyUI）
+          {{ t('studio.common.service.fullName') }}
         </span>
-        <i class="iconfont-sys svc-refresh" :class="{ spinning: refreshing }" title="刷新状态" @click="refresh">
+        <i
+          class="iconfont-sys svc-refresh"
+          :class="{ spinning: refreshing }"
+          :title="t('studio.common.service.refreshTip')"
+          @click="refresh"
+        >
           &#xe6b3;
         </i>
       </div>
 
       <template v-if="comfy">
         <div class="svc-row">
-          <span class="k">状态</span>
-          <span class="v" :class="running ? 'ok' : 'down'">{{ running ? '运行中' : '未启动' }}</span>
+          <span class="k">{{ t('studio.common.service.statusLabel') }}</span>
+          <span class="v" :class="running ? 'ok' : 'down'">
+            {{ running ? t('studio.common.service.running') : t('studio.common.service.stopped') }}
+          </span>
         </div>
         <div class="svc-row">
-          <span class="k">地址</span>
+          <span class="k">{{ t('studio.common.service.address') }}</span>
           <span class="v mono">{{ comfy.url }}</span>
         </div>
         <template v-if="running">
           <div class="svc-row">
-            <span class="k">版本</span>
+            <span class="k">{{ t('studio.common.service.version') }}</span>
             <span class="v">{{ comfy.version || '—' }}</span>
           </div>
           <div class="svc-row">
-            <span class="k">队列</span>
-            <span class="v">运行 {{ comfy.queue_running }} · 排队 {{ comfy.queue_pending }}</span>
+            <span class="k">{{ t('studio.common.service.queue') }}</span>
+            <span class="v">
+              {{
+                t('studio.common.service.queueDetail', {
+                  running: comfy.queue_running,
+                  pending: comfy.queue_pending
+                })
+              }}
+            </span>
           </div>
           <div v-for="(d, i) in comfy.devices" :key="i" class="svc-row">
             <span class="k">GPU</span>
-            <span class="v">{{ d.name || '—' }} · 空闲 {{ fmtMB(d.vram_free_mb) }} / {{ fmtMB(d.vram_total_mb) }}</span>
+            <span class="v">
+              {{ d.name || '—' }} · {{ t('studio.common.service.gpuIdle') }}
+              {{ fmtMB(d.vram_free_mb) }} / {{ fmtMB(d.vram_total_mb) }}
+            </span>
           </div>
         </template>
-        <p v-else class="svc-warn">
-          生图/对话生图功能暂不可用。可一键拉起启动脚本（需后端与 ComfyUI 同机），或在 Win11 宿主机手动启动。
-        </p>
+        <p v-else class="svc-warn">{{ t('studio.common.service.startHint') }}</p>
         <ElButton
           v-if="!running"
           class="svc-start"
@@ -62,20 +77,26 @@
           :loading="starting"
           @click="start"
         >
-          {{ starting ? `启动中 ${startElapsed}s…` : '⚡ 一键启动' }}
+          {{
+            starting
+              ? t('studio.common.service.startingBtn', { n: startElapsed })
+              : t('studio.common.service.startBtn')
+          }}
         </ElButton>
       </template>
-      <p v-else class="svc-warn">正在检测服务状态…</p>
+      <p v-else class="svc-warn">{{ t('studio.common.service.detecting') }}</p>
     </div>
   </el-popover>
 </template>
 
 <script setup lang="ts">
   import { computed, ref } from 'vue'
+  import { useI18n } from 'vue-i18n'
   import { useSystemStatusStore } from '@/store/modules/systemStatus'
 
   defineOptions({ name: 'ArtServiceStatus' })
 
+  const { t } = useI18n()
   const sysStore = useSystemStatusStore()
   const refreshing = ref(false)
 

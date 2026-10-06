@@ -3,21 +3,21 @@
   <div class="studio-page">
     <div class="studio-header">
       <div>
-        <h1>资产库</h1>
-        <p class="desc">生图 / 抠图 / 上传产物统一存储与管理</p>
+        <h1>{{ $t('studio.assets.title') }}</h1>
+        <p class="desc">{{ $t('studio.assets.desc') }}</p>
       </div>
       <ElUpload :show-file-list="false" :auto-upload="false" accept="image/*" :on-change="onUpload">
-        <ElButton type="primary" :loading="uploading">⬆ 上传图片</ElButton>
+        <ElButton type="primary" :loading="uploading">{{ $t('studio.assets.uploadBtn') }}</ElButton>
       </ElUpload>
     </div>
 
     <!-- 存储信息条 -->
     <div class="storage-bar studio-card" v-if="meta">
-      <span>📦 {{ meta.name }} v{{ meta.version }}</span>
+      <span>{{ $t('studio.assets.storageMeta', { name: meta.name, version: meta.version }) }}</span>
       <span class="divider">|</span>
-      <span>资产总数 {{ total }}</span>
+      <span>{{ $t('studio.assets.totalCount', { n: total }) }}</span>
       <span class="divider">|</span>
-      <span>当前筛选：{{ activeTypeText }}</span>
+      <span>{{ $t('studio.assets.currentFilter', { filter: activeTypeText }) }}</span>
     </div>
 
     <!-- 类型筛选 -->
@@ -48,27 +48,27 @@
             class="thumb-img"
           />
           <div class="thumb-ops">
-            <ElButton size="small" @click.stop="showDetail(asset)">详情</ElButton>
+            <ElButton size="small" @click.stop="showDetail(asset)">{{ $t('studio.common.actions.detail') }}</ElButton>
             <ElButton size="small" tag="a" :href="asset.url" target="_blank">⬇</ElButton>
             <ElButton size="small" type="danger" @click="remove(asset)">🗑</ElButton>
           </div>
         </div>
         <div class="asset-meta">
           <div class="asset-title">
-            <span class="truncate">#{{ asset.id }} {{ asset.labels || asset.filename || '未命名' }}</span>
+            <span class="truncate">#{{ asset.id }} {{ asset.labels || asset.filename || $t('studio.assets.unnamed') }}</span>
           </div>
           <div class="asset-sub">
-            <i :class="ASSET_BADGE_CLASS[asset.type]">{{ TASK_TYPE_TEXT[asset.type] }}</i>
+            <i :class="ASSET_BADGE_CLASS[asset.type]">{{ typeText(asset.type) }}</i>
             <span class="time">{{ formatTime(asset.created_at) }}</span>
           </div>
         </div>
       </div>
     </div>
 
-    <div v-else class="studio-empty"><span>暂无资产</span></div>
+    <div v-else class="studio-empty"><span>{{ $t('studio.assets.empty') }}</span></div>
 
     <div v-if="total > assets.length" class="load-more">
-      <ElButton :loading="loading" @click="loadMore">加载更多</ElButton>
+      <ElButton :loading="loading" @click="loadMore">{{ $t('studio.assets.loadMore') }}</ElButton>
     </div>
 
     <!-- 资产详情弹窗：关联任务的完整提示词 / 模型 / 参数 -->
@@ -78,6 +78,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Loading } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox, UploadFile } from 'element-plus'
 import {
@@ -89,18 +90,27 @@ import {
   SystemMeta,
   uploadAsset
 } from '@/api/studio'
-import { ASSET_BADGE_CLASS, TASK_TYPE_TEXT } from './utils'
+import { ASSET_BADGE_CLASS, TASK_TYPE_KEY } from './utils'
 import GenDetailDialog from './components/GenDetailDialog.vue'
 import './style.scss'
 
 defineOptions({ name: 'StudioAssets' })
 
-const typeTabs = [
-  { key: '', label: '全部' },
-  { key: 'generate', label: '生图' },
-  { key: 'matting', label: '抠图' },
-  { key: 'upload', label: '上传' }
-] as const
+const { t } = useI18n()
+
+/** 类型筛选 tabs（computed 保证语言切换后文案更新） */
+const typeTabs = computed<{ key: '' | 'generate' | 'matting' | 'upload'; label: string }[]>(() => [
+  { key: '', label: t('studio.assets.all') },
+  { key: 'generate', label: t('studio.common.taskType.generate') },
+  { key: 'matting', label: t('studio.common.taskType.matting') },
+  { key: 'upload', label: t('studio.common.taskType.upload') }
+])
+
+/** 类型 → 文案（未知类型回退显示原值） */
+const typeText = (type: string) => {
+  const key = TASK_TYPE_KEY[type]
+  return key ? t(key) : type
+}
 
 const PAGE_SIZE = 24
 
@@ -126,7 +136,9 @@ const showDetail = async (asset: StudioAsset) => {
   }
 }
 
-const activeTypeText = computed(() => typeTabs.find((t) => t.key === activeType.value)?.label ?? '全部')
+const activeTypeText = computed(
+  () => typeTabs.value.find((tab) => tab.key === activeType.value)?.label ?? t('studio.assets.all')
+)
 
 const load = async (append = false) => {
   loading.value = true
@@ -140,7 +152,7 @@ const load = async (append = false) => {
     const items = res.data?.items ?? []
     assets.value = append ? [...assets.value, ...items] : items
   } catch {
-    ElMessage.error('加载资产失败')
+    ElMessage.error(t('studio.assets.loadFailed'))
   } finally {
     loading.value = false
   }
@@ -158,10 +170,14 @@ const loadMore = () => {
 }
 
 const remove = (asset: StudioAsset) => {
-  ElMessageBox.confirm(`确认删除资产 #${asset.id}？磁盘文件将一并删除。`, '删除确认', { type: 'warning' })
+  ElMessageBox.confirm(t('studio.assets.deleteConfirm', { n: asset.id }), t('studio.assets.deleteTitle'), {
+    type: 'warning',
+    confirmButtonText: t('studio.common.actions.confirm'),
+    cancelButtonText: t('studio.common.actions.cancel')
+  })
     .then(async () => {
       await deleteAsset(asset.id)
-      ElMessage.success('已删除')
+      ElMessage.success(t('studio.assets.deleted'))
       load()
     })
     .catch(() => undefined)
@@ -172,13 +188,13 @@ const onUpload = async (file: UploadFile) => {
   if (!file.raw) return
   uploading.value = true
   try {
-    await uploadAsset(file.raw, '手工上传')
-    ElMessage.success('上传成功')
+    await uploadAsset(file.raw, t('studio.assets.manualUpload'))
+    ElMessage.success(t('studio.assets.uploadSuccess'))
     page.value = 1
     activeType.value = 'upload'
     load()
   } catch {
-    ElMessage.error('上传失败')
+    ElMessage.error(t('studio.assets.uploadFailed'))
   } finally {
     uploading.value = false
   }

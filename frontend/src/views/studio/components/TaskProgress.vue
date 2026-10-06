@@ -7,7 +7,7 @@
     </div>
     <ElProgress :percentage="display" :stroke-width="8" :show-text="false" class="tp-bar" />
     <div class="tp-meta">
-      <span>已等待 {{ elapsedText }}</span>
+      <span>{{ $t('studio.common.waitedFor', { n: elapsedText }) }}</span>
       <span v-if="hint" class="tp-hint">{{ hint }}</span>
     </div>
   </div>

@@ -395,6 +395,11 @@ export function listChatSessions() {
   return request.get<BaseResponse<ChatSession[]>>({ url: '/api/chat/sessions' })
 }
 
+/** 删除会话（历史消息一并移除；图片资产保留在资产库） */
+export function deleteChatSession(sessionId: number) {
+  return request.del<BaseResponse<{ deleted: boolean }>>({ url: `/api/chat/sessions/${sessionId}` })
+}
+
 /** 会话历史消息 */
 export function listChatMessages(sessionId: number) {
   return request.get<BaseResponse<ChatMessage[]>>({

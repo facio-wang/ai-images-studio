@@ -365,6 +365,17 @@
           background: #eee;
           border-radius: 50%;
         }
+
+        /* 无自定义头像：用户名首字母占位（顶栏触发器与用户菜单共用） */
+        .cover-fallback {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 14px;
+          font-weight: 600;
+          color: #fff;
+          background: linear-gradient(135deg, #2563eb, #06b6d4);
+        }
       }
     }
   }

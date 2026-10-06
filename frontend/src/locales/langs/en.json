@@ -26,11 +26,20 @@
   "setting": {
     "menuType": {
       "title": "Menu Layout",
-      "list": ["Vertical", "Horizontal", "Mixed", "Dual"]
+      "list": [
+        "Vertical",
+        "Horizontal",
+        "Mixed",
+        "Dual"
+      ]
     },
     "theme": {
       "title": "Theme Style",
-      "list": ["Light", "Dark", "System"]
+      "list": [
+        "Light",
+        "Dark",
+        "System"
+      ]
     },
     "menu": {
       "title": "Menu Style"
@@ -40,11 +49,17 @@
     },
     "box": {
       "title": "Box Style",
-      "list": ["Border", "Shadow"]
+      "list": [
+        "Border",
+        "Shadow"
+      ]
     },
     "container": {
       "title": "Container Width",
-      "list": ["Full", "Boxed"]
+      "list": [
+        "Full",
+        "Boxed"
+      ]
     },
     "basics": {
       "title": "Basic Config",
@@ -82,8 +97,14 @@
   "notice": {
     "title": "Notice",
     "btnRead": "Mark as read",
-    "bar": ["Notice", "Message", "Todo"],
-    "text": ["No"],
+    "bar": [
+      "Notice",
+      "Message",
+      "Todo"
+    ],
+    "text": [
+      "No"
+    ],
     "viewAll": "View all"
   },
   "worktab": {
@@ -321,6 +342,45 @@
     "exception": {
       "title": "Exception",
       "notFound": "404"
+    },
+    "creation": {
+      "title": "Create"
+    },
+    "manage": {
+      "title": "Manage"
+    },
+    "system": {
+      "title": "System"
+    },
+    "studioHome": {
+      "title": "Workspace"
+    },
+    "studioChat": {
+      "title": "Chat Studio"
+    },
+    "studioGenerate": {
+      "title": "Image Generation"
+    },
+    "studioMatting": {
+      "title": "Matting Toolbox"
+    },
+    "studioModels": {
+      "title": "Model Center"
+    },
+    "studioAssets": {
+      "title": "Asset Library"
+    },
+    "studioTasks": {
+      "title": "Task Center"
+    },
+    "studioHelp": {
+      "title": "Help Center"
+    },
+    "studioSettings": {
+      "title": "Settings"
+    },
+    "personal": {
+      "title": "Profile"
     }
   },
   "table": {
