@@ -194,6 +194,27 @@
               >
             </div>
           </div>
+          <div class="adv-row">
+            <span class="k">{{ $t('studio.generate.loraMount') }}</span>
+            <div class="adv-loras">
+              <span v-if="!chatLoras.length" class="adv-lora-empty">{{ $t('studio.generate.loraEmpty') }}</span>
+              <label v-for="l in chatLoras" :key="l.name" class="adv-lora" :class="{ on: isChatLoraOn(l.name) }">
+                <input type="checkbox" :checked="isChatLoraOn(l.name)" @change="toggleChatLora(l)" />
+                <span class="name">{{ l.name }}</span>
+                <input
+                  v-if="isChatLoraOn(l.name)"
+                  type="number"
+                  class="w"
+                  min="0"
+                  max="1.5"
+                  step="0.05"
+                  :value="chatLoraStrength(l.name)"
+                  @click.stop
+                  @change="setChatLoraStrength(l.name, ($event.target as HTMLInputElement).valueAsNumber)"
+                />
+              </label>
+            </div>
+          </div>
           <div class="adv-row three">
             <span class="k">{{ $t('studio.chat.stepsLabel') }}</span>
             <ElInputNumber v-model="advanced.steps" :min="1" :max="50" size="small" />
@@ -355,6 +376,43 @@ const preview = reactive<{ visible: boolean; asset: StudioAsset | null; snap: Re
 const advancedOpen = ref(false)
 const advanced = reactive({ negative: '', width: 1024, height: 1024, steps: 20, cfg: 7, seed: '-1' })
 const defaultModel = ref('')
+/** 高级参数里的 LoRA 挂载：空数组 = 后端自动挂全部启用 LoRA */
+const chatLoras = ref<StudioModel[]>([])
+const chatLoraSel = ref<{ name: string; strength: number }[]>([])
+
+const isChatLoraOn = (name: string) => chatLoraSel.value.some((s) => s.name === name)
+const chatLoraStrength = (name: string) =>
+  chatLoraSel.value.find((s) => s.name === name)?.strength ?? 0.8
+
+const toggleChatLora = (m: StudioModel) => {
+  if (isChatLoraOn(m.name)) {
+    chatLoraSel.value = chatLoraSel.value.filter((s) => s.name !== m.name)
+  } else {
+    let strength = 0.8
+    try {
+      const meta = typeof m.meta === 'string' ? JSON.parse(m.meta) : m.meta
+      const v = Number(meta?.strength)
+      if (Number.isFinite(v)) strength = v
+    } catch {
+      // meta 解析失败用默认权重
+    }
+    chatLoraSel.value = [...chatLoraSel.value, { name: m.name, strength }]
+  }
+}
+
+const setChatLoraStrength = (name: string, v: number) => {
+  const strength = Number.isFinite(v) ? Math.min(1.5, Math.max(0, v)) : 0.8
+  chatLoraSel.value = chatLoraSel.value.map((s) => (s.name === name ? { ...s, strength } : s))
+}
+
+const loadChatLoras = async () => {
+  try {
+    const res = await listModels('lora')
+    chatLoras.value = res.data ?? []
+  } catch {
+    chatLoras.value = []
+  }
+}
 
 interface RegenSnapshot {
   prompt: string
@@ -479,6 +537,7 @@ const regenerateWith = (msg: ChatViewMessage) => {
     seed: Number(draft?.seed ?? snap.seed ?? -1) || -1
   }
   if (snap.negative) params.negative = snap.negative
+  if (chatLoraSel.value.length) params.loras = chatLoraSel.value.map((s) => ({ ...s }))
   preview.visible = false
   send(snap.prompt, params)
 }
@@ -496,9 +555,24 @@ const viewAsset = async (asset: StudioAsset) => {
 }
 
 /** 发送消息：AI 回复带 task_id 时轮询任务，done 后刷新产物图 */
-const send = async (text?: string, params?: Record<string, unknown>) => {
+const send = async (text?: string, params?: Record<string, unknown> | undefined) => {
   const message = (text ?? input.value).trim()
   if (!message || sending.value) return
+  // 高级面板展开时：面板内全部参数（含 LoRA 挂载）随消息提交
+  if (advancedOpen.value) {
+    params = {
+      ...(params ?? {}),
+      ...(advanced.negative.trim() ? { negative: advanced.negative.trim() } : {}),
+      width: advanced.width,
+      height: advanced.height,
+      steps: advanced.steps,
+      cfg: advanced.cfg,
+      seed: Number(advanced.seed) || -1,
+      ...(chatLoraSel.value.length
+        ? { loras: chatLoraSel.value.map((s) => ({ ...s })) }
+        : { loras: [] })
+    }
+  }
   input.value = ''
   sending.value = true
 
@@ -708,6 +782,7 @@ onMounted(async () => {
   }
   // 生图服务状态刷新：未启动时页面顶部横幅给出一键启动入口（轮询由顶栏共享 store 负责）
   await sysStore.fetchStatus()
+  loadChatLoras()
   // 底部模型标识：默认底模名
   try {
     const res = await listModels('checkpoint')
@@ -721,11 +796,17 @@ onMounted(async () => {
 
 <style lang="scss" scoped>
   .chat-page {
+    display: flex;
+    flex-direction: column;
+    // 顶栏 60 + 页签 44 + 页面上下 padding 8，消息流内部滚动、页面本身不出滚动条
+    height: calc(100vh - 118px);
+
     .chat-layout {
       display: flex;
+      flex-direction: row-reverse; // 会话栏在右
       gap: 14px;
-      height: calc(100vh - 200px);
-      min-height: 480px;
+      flex: 1;
+      min-height: 0;
     }
 
     /* ---- 左侧会话栏 ---- */
@@ -1131,6 +1212,54 @@ onMounted(async () => {
 
         &:hover {
           color: #f87171;
+        }
+      }
+    }
+
+    .adv-loras {
+      flex: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+
+      .adv-lora-empty {
+        font-size: 11.5px;
+        color: var(--art-gray-500);
+      }
+
+      .adv-lora {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 3px 8px;
+        font-size: 11.5px;
+        border: 1px solid var(--art-border-dashed-color);
+        border-radius: 5px;
+        cursor: pointer;
+        color: var(--art-gray-600);
+        user-select: none;
+
+        &.on {
+          border-color: var(--art-primary);
+          color: var(--art-primary);
+          background: rgba(37, 99, 235, 0.08);
+        }
+
+        .name {
+          max-width: 160px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .w {
+          width: 56px;
+          padding: 1px 4px;
+          font-size: 11px;
+          border: 1px solid var(--art-border-dashed-color);
+          border-radius: 4px;
+          background: transparent;
+          color: var(--art-text-gray-900);
         }
       }
     }

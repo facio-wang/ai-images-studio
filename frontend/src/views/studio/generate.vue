@@ -42,6 +42,32 @@
             {{ $t('studio.generate.sdxlHint') }}
           </div>
 
+          <div class="card-title" style="margin-top: 16px">{{ $t('studio.generate.loraMount') }}</div>
+          <div v-if="!loraOptions.length" class="model-hint">{{ $t('studio.generate.loraEmpty') }}</div>
+          <template v-else>
+            <div v-for="l in loraOptions" :key="l.name" class="lora-item">
+              <ElCheckbox
+                :model-value="isLoraSelected(l.name)"
+                @update:model-value="(v) => toggleLora(l, v === true)"
+              >
+                <span class="lora-name">{{ l.name }}</span>
+              </ElCheckbox>
+              <div v-if="isLoraSelected(l.name)" class="lora-strength">
+                <span class="k">{{ $t('studio.generate.strengthLabel') }}</span>
+                <ElSlider
+                  :model-value="loraStrength(l.name)"
+                  :min="0"
+                  :max="1.5"
+                  :step="0.05"
+                  style="flex: 1"
+                  @update:model-value="(v) => setLoraStrength(l.name, Number(v))"
+                />
+                <b class="v">{{ loraStrength(l.name).toFixed(2) }}</b>
+              </div>
+            </div>
+            <div class="model-hint">{{ $t('studio.generate.loraAutoHint') }}</div>
+          </template>
+
           <div class="card-title" style="margin-top: 16px">{{ $t('studio.generate.resolution') }}</div>
           <div class="size-grid">
             <div
@@ -255,6 +281,9 @@ const sizePresets = [
 ]
 
 const checkpointOptions = ref<StudioModel[]>([])
+const loraOptions = ref<StudioModel[]>([])
+/** 显式勾选的 LoRA；为空时后端自动挂载模型中心全部启用的 LoRA */
+const selectedLoras = ref<{ name: string; strength: number }[]>([])
 const results = ref<StudioAsset[]>([])
 const history = ref<StudioAsset[]>([])
 const taskInfo = ref<StudioTask | null>(null)
@@ -312,6 +341,44 @@ const onCheckpointChange = (name: string) => {
 }
 
 let pollTimer: ReturnType<typeof setTimeout> | null = null
+
+/** LoRA 默认权重：模型 meta.strength，缺省 0.8 */
+const defaultStrength = (m: StudioModel) => {
+  try {
+    const meta = typeof m.meta === 'string' ? JSON.parse(m.meta) : m.meta
+    const v = Number(meta?.strength)
+    return Number.isFinite(v) ? v : 0.8
+  } catch {
+    return 0.8
+  }
+}
+
+const isLoraSelected = (name: string) => selectedLoras.value.some((s) => s.name === name)
+
+const loraStrength = (name: string) =>
+  selectedLoras.value.find((s) => s.name === name)?.strength ?? 0.8
+
+const toggleLora = (m: StudioModel, on: boolean) => {
+  if (on) {
+    selectedLoras.value = [...selectedLoras.value, { name: m.name, strength: defaultStrength(m) }]
+  } else {
+    selectedLoras.value = selectedLoras.value.filter((s) => s.name !== m.name)
+  }
+}
+
+const setLoraStrength = (name: string, v: number) => {
+  selectedLoras.value = selectedLoras.value.map((s) => (s.name === name ? { ...s, strength: v } : s))
+}
+
+/** 拉取启用的 LoRA（category=lora，供挂载选择） */
+const loadLoras = async () => {
+  try {
+    const res = await listModels('lora')
+    loraOptions.value = res.data ?? []
+  } catch {
+    loraOptions.value = []
+  }
+}
 
 /** 拉取启用的底模（category=checkpoint），默认选中 is_default */
 const loadCheckpoints = async () => {
@@ -441,7 +508,11 @@ const submit = async () => {
       seed: Number(form.seed) || -1,
       count: form.count,
       // 海报文字叠加：有内容时随任务提交，生图完成后由后端渲染真实文字
-      ...(buildTextsPayload().length ? { texts: buildTextsPayload() } : {})
+      ...(buildTextsPayload().length ? { texts: buildTextsPayload() } : {}),
+      // LoRA 挂载：显式选择时按选择提交（为空则后端自动挂全部启用 LoRA）
+      ...(selectedLoras.value.length
+        ? { loras: selectedLoras.value.map((s) => ({ name: s.name, strength: s.strength })) }
+        : {})
     })
     taskInfo.value = res.data
     await poll(res.data.id)
@@ -533,6 +604,7 @@ const goMatting = (assetId: number) => {
 
 onMounted(() => {
   loadCheckpoints()
+  loadLoras()
   loadHistory()
 })
 </script>
@@ -595,6 +667,39 @@ onMounted(() => {
     &.seed {
       .el-button {
         padding: 5px 10px;
+      }
+    }
+  }
+
+  .lora-item {
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--art-border-dashed-color);
+
+    &:last-of-type {
+      border-bottom: none;
+    }
+
+    .lora-name {
+      font-size: 12.5px;
+    }
+
+    .lora-strength {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 2px 0 6px 24px;
+
+      .k {
+        font-size: 11px;
+        color: var(--art-gray-500);
+        white-space: nowrap;
+      }
+
+      .v {
+        font-size: 11.5px;
+        color: var(--art-primary);
+        width: 34px;
+        text-align: right;
       }
     }
   }

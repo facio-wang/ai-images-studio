@@ -81,24 +81,36 @@ async def _run_generate(params: dict, db: aiosqlite.Connection, task_id: int | N
     # 按模型中心 meta 推断工作流类型（z_image 走 GGUF+Qwen3 工作流，原生支持中文）
     model_type = model_service.infer_model_type(checkpoint, model_row["meta"] if model_row else None)
     is_z_image = model_type == "z_image"
-    # 生图可挂模型中心启用的 LoRA（meta.strength 可调强度，默认 1.0）
+    # 生图可挂模型中心启用的 LoRA（meta.strength 可调强度，默认 1.0）；
+    # 前端显式选择（params.loras 非空列表）时以选择为准，未传则保持"自动挂全部启用"的兼容行为
+    explicit_loras = params.get("loras")
     loras = []
-    for row in await model_service.list_models(db, "lora"):
-        if not row["enabled"]:
-            continue
-        meta = row["meta"]
-        if isinstance(meta, str):
+    if isinstance(explicit_loras, list) and explicit_loras:
+        for lora in explicit_loras:
+            if not isinstance(lora, dict) or not lora.get("name"):
+                continue
             try:
-                meta = json.loads(meta)
+                strength = float(lora.get("strength", 0.8))
             except (TypeError, ValueError):
-                meta = {}
-        strength = 1.0
-        if isinstance(meta, dict):
-            try:
-                strength = float(meta.get("strength", 1.0))
-            except (TypeError, ValueError):
-                strength = 1.0
-        loras.append({"name": row["name"], "strength": strength})
+                strength = 0.8
+            loras.append({"name": str(lora["name"]), "strength": strength})
+    else:
+        for row in await model_service.list_models(db, "lora"):
+            if not row["enabled"]:
+                continue
+            meta = row["meta"]
+            if isinstance(meta, str):
+                try:
+                    meta = json.loads(meta)
+                except (TypeError, ValueError):
+                    meta = {}
+            strength = 1.0
+            if isinstance(meta, dict):
+                try:
+                    strength = float(meta.get("strength", 1.0))
+                except (TypeError, ValueError):
+                    strength = 1.0
+            loras.append({"name": row["name"], "strength": strength})
     # 中文 prompt 处理：Z-Image 原生中文直出；其余底模发送前增强为"中文原意+英文关键词"
     raw_prompt = params.get("prompt", "")
     if is_z_image:

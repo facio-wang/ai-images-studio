@@ -164,14 +164,16 @@ async def generate(payload: dict, db=Depends(get_db)):
     params = {
         "prompt": prompt,
         "checkpoint": payload.get("checkpoint"),
-        "width": payload.get("width", 1024),
-        "height": payload.get("height", 1024),
-        "steps": payload.get("steps", 20),
-        "cfg": payload.get("cfg", 7.0),
-        "seed": payload.get("seed", -1),
-        "count": payload.get("count", 1),
+        "width": int(payload.get("width", 1024)),
+        "height": int(payload.get("height", 1024)),
+        "steps": int(payload.get("steps", 20)),
+        "cfg": float(payload.get("cfg", 7.0)),
+        "seed": int(payload.get("seed", -1)),
+        "count": int(payload.get("count", 1)),
         # 海报文字叠加配置直接透传（不做严格校验，渲染层容错）
         "texts": payload.get("texts"),
+        # LoRA 挂载：前端显式选择时覆盖"自动挂全部启用 LoRA"的行为
+        "loras": payload.get("loras"),
     }
     task = await task_service.create_task(db, "generate", params)
     return ok(task)
