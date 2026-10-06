@@ -76,17 +76,19 @@
             <ElSwitch :model-value="isEnabled(row)" @change="(v: any) => toggleEnabled(row, v)" />
           </template>
         </ElTableColumn>
-        <ElTableColumn :label="$t('studio.models.table.actions')" width="200" fixed="right">
+        <ElTableColumn :label="$t('studio.models.table.actions')" width="232" fixed="right" class-name="ops-col">
           <template #default="{ row }">
-            <ElButton
-              size="small"
-              :disabled="isEnabled(row, 'is_default')"
-              @click="setDefault(row)"
-            >
-              {{ $t('studio.models.table.setDefault') }}
-            </ElButton>
-            <ElButton size="small" type="primary" plain @click="openEdit(row)">{{ $t('studio.models.table.edit') }}</ElButton>
-            <ElButton size="small" type="danger" plain @click="remove(row)">{{ $t('studio.common.actions.delete') }}</ElButton>
+            <div class="table-ops">
+              <ElButton
+                size="small"
+                :disabled="isEnabled(row, 'is_default')"
+                @click="setDefault(row)"
+              >
+                {{ $t('studio.models.table.setDefault') }}
+              </ElButton>
+              <ElButton size="small" type="primary" plain @click="openEdit(row)">{{ $t('studio.models.table.edit') }}</ElButton>
+              <ElButton size="small" type="danger" plain @click="remove(row)">{{ $t('studio.common.actions.delete') }}</ElButton>
+            </div>
           </template>
         </ElTableColumn>
       </ElTable>
@@ -601,5 +603,21 @@ onMounted(load)
     color: var(--art-gray-500);
     background: rgba(37, 99, 235, 0.06);
     border-radius: 6px;
+  }
+  /* 表格操作列规范：按钮容器 flex 单行，禁止换行堆叠 */
+  .table-ops {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+
+    :deep(.el-button + .el-button) {
+      margin-left: 0;
+    }
+
+    :deep(.el-button) {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
   }
 </style>

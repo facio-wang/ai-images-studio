@@ -53,8 +53,9 @@
             <span class="time-text">{{ formatTime(row.created_at) }}</span>
           </template>
         </ElTableColumn>
-        <ElTableColumn :label="$t('studio.tasks.table.actions')" width="150" fixed="right">
+        <ElTableColumn :label="$t('studio.tasks.table.actions')" width="200" fixed="right" class-name="ops-col">
           <template #default="{ row }">
+            <div class="table-ops">
             <ElButton size="small" @click="showDetail(row)">{{ $t('studio.common.actions.detail') }}</ElButton>
             <!-- 失败任务可重试：手动重试会重置计数，不受自动重试上限影响 -->
             <ElTooltip
@@ -74,6 +75,7 @@
                 </ElButton>
               </span>
             </ElTooltip>
+            </div>
           </template>
         </ElTableColumn>
         <template #empty>
@@ -266,5 +268,21 @@ onUnmounted(() => {
     font-size: 11px;
     color: var(--art-gray-600);
     word-break: break-all;
+  }
+  /* 表格操作列规范：按钮容器 flex 单行，禁止换行堆叠 */
+  .table-ops {
+    display: flex;
+    align-items: center;
+    flex-wrap: nowrap;
+    gap: 6px;
+
+    :deep(.el-button + .el-button) {
+      margin-left: 0;
+    }
+
+    :deep(.el-button) {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
   }
 </style>
